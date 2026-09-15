@@ -370,6 +370,11 @@ func (ma *memberAPI) addOrEditServer(c *gin.Context) {
 	var isEdit bool
 	err := c.ShouldBindJSON(&sf)
 	if err == nil {
+		if len([]rune(sf.Name)) > 256 {
+			err = errors.New("服务器名称不能超过 256 个字符")
+		}
+	}
+	if err == nil {
 		s.Name = sf.Name
 		s.Secret = strings.TrimSpace(sf.Secret)
 		s.DisplayIndex = sf.DisplayIndex

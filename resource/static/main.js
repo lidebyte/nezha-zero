@@ -931,8 +931,33 @@ function logout(id) {
 
 $(document).ready(() => {
   try {
+    // Semantic UI 的远程下拉菜单默认用 innerHTML 渲染结果；服务器名称
+    // 可由 API 创建，菜单和标签均须按纯文本渲染（包括缓存回显）。
+    function escapeServerSearchHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     $(".ui.servers.search.dropdown").dropdown({
       clearable: true,
+      preserveHTML: false,
+      templates: {
+        menu: function (data, fields) {
+          return (data[fields.values] || []).map(function (item) {
+            return '<div class="' + (item[fields.disabled] ? 'disabled ' : '') +
+              'item" data-value="' + escapeServerSearchHtml(item[fields.value]) +
+              '" data-text="' + escapeServerSearchHtml(item[fields.text] || item[fields.name]) +
+              '">' + escapeServerSearchHtml(item[fields.name]) + '</div>';
+          }).join('');
+        },
+        label: function (value, text) {
+          return escapeServerSearchHtml(text) + '<i class="delete icon"></i>';
+        },
+      },
       apiSettings: {
         url: "/api/search-server?word={query}",
         cache: false,

@@ -309,6 +309,9 @@ func (s *ServerAPIService) GetAllList() *ServerInfoResponse {
 func (s *ServerAPIService) Register(rs *RegisterServer) *ServerRegisterResponse {
 	var serverInfo model.Server
 	var err error
+	if len([]rune(rs.Name)) > 256 {
+		return &ServerRegisterResponse{CommonResponse: CommonResponse{Code: 400, Message: "服务器名称不能超过 256 个字符"}}
+	}
 	// Populate serverInfo fields
 	serverInfo.Name = rs.Name
 	serverInfo.Tag = rs.Tag

@@ -61,6 +61,26 @@ func TestParseServerSubscription(t *testing.T) {
 	}
 }
 
+func TestServerSubscriptionDefaultsCurrencyAndCycle(t *testing.T) {
+	now := time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
+	server := &Server{
+		PublicNote: `{"billingDataMod":{"endDate":"2026-01-01","amount":"10U","autoRenewal":true}}`,
+	}
+	got := ParseServerSubscription(server, now)
+	if got.Currency != "USD" {
+		t.Fatalf("currency = %q, want USD", got.Currency)
+	}
+	if got.EndDate.Format("2006-01-02") != "2027-01-01" {
+		t.Fatalf("default annual renewal date = %v, want 2027-01-01", got.EndDate)
+	}
+	if months := SubscriptionCycleMonths(""); months != 12 {
+		t.Fatalf("empty billing cycle = %d months, want 12", months)
+	}
+	if months := SubscriptionCycleMonths("半年"); months != 6 {
+		t.Fatalf("semiannual billing cycle = %d months, want 6", months)
+	}
+}
+
 func TestSubscriptionMarshalForDashboardEscapesScriptContent(t *testing.T) {
 	s := Subscription{Common: Common{ID: 7}, Name: `</script><script>alert(1)</script>`, Group: "Default"}
 	encoded := string(s.MarshalForDashboard())

@@ -243,6 +243,9 @@ func ParseServerSubscription(server *Server, now time.Time) ServerSubscription {
 	result.Price = rawSubscriptionValue(note.BillingDataMod.Amount)
 	result.PriceUnit = strings.TrimSpace(note.BillingDataMod.Cycle)
 	result.Currency = DetectCurrency(result.Price)
+	if result.Price != "" && result.Currency == "" {
+		result.Currency = "USD"
+	}
 
 	if result.EndDate.IsZero() || !subscriptionAutoRenewal(note.BillingDataMod.AutoRenewal) {
 		return result
@@ -314,6 +317,8 @@ func subscriptionAutoRenewal(raw json.RawMessage) bool {
 
 func SubscriptionCycleMonths(cycle string) int {
 	switch strings.ToLower(strings.TrimSpace(cycle)) {
+	case "":
+		return 12
 	case "月", "mo", "month", "monthly", "m":
 		return 1
 	case "季", "季度", "quarterly", "q":

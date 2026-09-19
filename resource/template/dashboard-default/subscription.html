@@ -38,11 +38,11 @@
     color: rgba(0,0,0,.48);
 }
 .subscription-days-warning {
-    color: #b58105;
+    color: #fed12c;
     font-weight: 600;
 }
 .subscription-days-danger {
-    color: #db2828;
+    color: #ee1c25;
     font-weight: 600;
 }
 .subscription-days-expired {
@@ -172,6 +172,7 @@
                     <select name="PriceUnit" class="ui fluid dropdown">
                         <option value="月">{{tr "PNECycleMonthly"}}</option>
                         <option value="季度">{{tr "PNECycleQuarterly"}}</option>
+                        <option value="半年">{{tr "PNECycleHalfYear"}}</option>
                         <option value="年">{{tr "PNECycleYearly"}}</option>
                         <option value="两年">{{tr "BillingCycleTwoYears"}}</option>
                         <option value="三年">{{tr "BillingCycleThreeYears"}}</option>
@@ -231,7 +232,7 @@ function addOrEditSubscription(subscription) {
     form.find('[name=EndDate]').val(current.EndDate || '');
     form.find('.pne-date-manual[data-target=EndDate]').val(current.EndDate || '');
     form.find('[name=Price]').val(current.Price || '');
-    form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '月');
+    form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '年');
     form.find('[name=Currency]').dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
     form.find('[name=Group]').val(current.Group || 'Default');
     form.find('[name=Link]').val(current.Link || '');

@@ -462,7 +462,6 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				}
 				audit.Record(c, audit.TypeConfig, action, fmt.Sprintf("subscription: %s (ID %d)", subscription.Name, subscription.ID))
 				c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
-				go singleton.CheckExpirationReminders()
 				return
 			}
 		}

@@ -71,6 +71,15 @@
         color: rgba(255, 255, 255, 0.45);
     }
 
+    .currency-priority-dropdown .menu > .item[data-value="EUR"] {
+        margin-bottom: 0.25rem !important;
+        border-bottom: 1px solid rgba(34, 36, 38, 0.15) !important;
+    }
+
+    html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"] {
+        border-bottom-color: rgba(255, 255, 255, 0.18) !important;
+    }
+
     #passwordLoginSettings .admin-password-prompt {
         display: none;
         margin-top: 0.45rem;
@@ -269,7 +278,7 @@
                 </div>
                 <div class="field">
                     <label>{{tr "BaseCurrency"}}</label>
-                    <select name="BaseCurrency" class="ui fluid dropdown">
+                    <select name="BaseCurrency" class="ui fluid dropdown currency-priority-dropdown">
                         {{range .Currencies}}{{if eq .Code "CNY"}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
                         {{range .Currencies}}{{if eq .Code "USD"}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
                         {{range .Currencies}}{{if eq .Code "EUR"}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
@@ -868,6 +877,10 @@
     $('.checkbox.template-handle-no-route').checkbox('set checked')
     {{ end }}
     togglePasswordLoginSettings();
+    const baseCurrencySelect = $('select[name=BaseCurrency]');
+    baseCurrencySelect.dropdown();
+    const baseCurrencyDropdown = $('input[type=hidden][name=BaseCurrency]').closest('.ui.dropdown');
+    baseCurrencyDropdown.addClass('currency-priority-dropdown');
     $('#currencyApiKeyHelp').popup({
         popup: $('#currencyApiKeyPopup'),
         on: 'hover',

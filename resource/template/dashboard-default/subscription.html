@@ -62,6 +62,13 @@
 .subscription-id-hint > .icon {
     margin: 0 !important;
 }
+.currency-priority-dropdown .menu > .item[data-value="EUR"] {
+    margin-bottom: 0.25rem !important;
+    border-bottom: 1px solid rgba(34, 36, 38, 0.15) !important;
+}
+html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"] {
+    border-bottom-color: rgba(255, 255, 255, 0.18) !important;
+}
 @media only screen and (max-width: 767px) {
     .subscription-summary {
         flex-wrap: wrap;
@@ -183,8 +190,11 @@
             </div>
             <div class="field">
                 <label>{{tr "Currency"}}</label>
-                <select name="Currency" class="ui fluid dropdown">
-                    {{range .Currencies}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}
+                <select name="Currency" class="ui fluid dropdown currency-priority-dropdown">
+                    {{range .Currencies}}{{if eq .Code "CNY"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                    {{range .Currencies}}{{if eq .Code "USD"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                    {{range .Currencies}}{{if eq .Code "EUR"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                    {{range .Currencies}}{{if and (ne .Code "CNY") (ne .Code "USD") (ne .Code "EUR")}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
                 </select>
             </div>
             <div class="field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
@@ -229,6 +239,13 @@ function subscriptionFormData() {
         Enable: form.find('[name=Enable]').is(':checked') ? 'on' : 'off'
     };
 }
+function subscriptionCurrencyDropdown(form) {
+    const select = form.find('select[name=Currency]');
+    if (select.length) select.dropdown();
+    const dropdown = form.find('input[type=hidden][name=Currency]').closest('.ui.dropdown');
+    dropdown.addClass('currency-priority-dropdown');
+    return dropdown.length ? dropdown : select;
+}
 function addOrEditSubscription(subscription) {
     const form = $('#subscriptionForm');
     const current = subscription || {};
@@ -240,7 +257,7 @@ function addOrEditSubscription(subscription) {
     form.find('.pne-date-manual[data-target=EndDate]').val(current.EndDate || '');
     form.find('[name=Price]').val(current.Price || '');
     form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '年');
-    form.find('[name=Currency]').dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
+    subscriptionCurrencyDropdown(form).dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
     form.find('[name=Group]').val(current.Group || 'Default');
     form.find('[name=Link]').val(current.Link || '');
     form.find('[name=Note]').val(current.Note || '');

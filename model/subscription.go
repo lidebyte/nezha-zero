@@ -173,6 +173,7 @@ type Subscription struct {
 	Link      string
 	Note      string
 	Group     string `gorm:"column:group_name"`
+	Disabled  bool   `gorm:"default:false"`
 }
 
 func (s Subscription) MarshalForDashboard() template.JS {
@@ -187,6 +188,7 @@ func (s Subscription) MarshalForDashboard() template.JS {
 		Link      string `json:"Link"`
 		Note      string `json:"Note"`
 		Group     string `json:"Group"`
+		Enable    bool   `json:"Enable"`
 	}
 	data, _ := utils.Json.Marshal(dashboardSubscription{
 		ID:        s.ID,
@@ -199,6 +201,7 @@ func (s Subscription) MarshalForDashboard() template.JS {
 		Link:      s.Link,
 		Note:      s.Note,
 		Group:     s.Group,
+		Enable:    !s.Disabled,
 	})
 	return template.JS(data)
 }

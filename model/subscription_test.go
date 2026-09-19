@@ -67,6 +67,13 @@ func TestSubscriptionMarshalForDashboardEscapesScriptContent(t *testing.T) {
 	if strings.Contains(encoded, "</script>") {
 		t.Fatalf("unsafe script terminator in JSON: %s", encoded)
 	}
+	if !strings.Contains(encoded, `"Enable":true`) {
+		t.Fatalf("enabled subscription state missing from JSON: %s", encoded)
+	}
+	s.Disabled = true
+	if encoded = string(s.MarshalForDashboard()); !strings.Contains(encoded, `"Enable":false`) {
+		t.Fatalf("disabled subscription state missing from JSON: %s", encoded)
+	}
 }
 
 func TestSubscriptionRemainingDays(t *testing.T) {

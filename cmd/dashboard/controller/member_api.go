@@ -370,6 +370,7 @@ type subscriptionForm struct {
 	Link      string
 	Note      string
 	Group     string
+	Enable    string
 }
 
 func parseOptionalSubscriptionDate(value string) (time.Time, error) {
@@ -443,6 +444,7 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				Link:      normalizeSubscriptionLink(form.Link),
 				Note:      strings.TrimSpace(form.Note),
 				Group:     form.Group,
+				Disabled:  form.Enable == "off",
 			}
 			if form.ID == 0 {
 				err = singleton.DB.Create(&subscription).Error
@@ -450,7 +452,7 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				var existing model.Subscription
 				if err = singleton.DB.First(&existing, form.ID).Error; err == nil {
 					subscription.ID = existing.ID
-					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group").Updates(subscription).Error
+					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group", "Disabled").Updates(subscription).Error
 				}
 			}
 			if err == nil {

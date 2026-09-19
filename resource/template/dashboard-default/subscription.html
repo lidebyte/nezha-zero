@@ -49,6 +49,10 @@
     color: rgba(0,0,0,.45);
     font-weight: 400;
 }
+.subscription-days-disabled {
+    color: rgba(0,0,0,.87);
+    font-weight: 400;
+}
 .subscription-id-hint {
     margin-left: .2rem;
     color: rgba(0,0,0,.35);
@@ -113,14 +117,14 @@
                 </thead>
                 <tbody>
                     {{range $subscription := .Subscriptions}}
-                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}">
+                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}">
                         <td class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
                         <td>{{if $subscription.Manual}}{{$subscription.ID}}{{else}}S{{$subscription.ID}}{{end}}</td>
                         <td>{{$subscription.Name}}</td>
                         <td>{{$subscription.Group}}</td>
                         <td>{{$subscription.StartDate}}</td>
                         <td>{{$subscription.EndDate}}</td>
-                        <td class="{{if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
+                        <td class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Price}}{{$subscription.Price}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
@@ -184,6 +188,12 @@
             </div>
             <div class="field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
             <div class="field"><label>{{tr "Note"}}</label><textarea name="Note"></textarea></div>
+            <div class="field">
+                <div class="ui checkbox subscription-enable">
+                    <input name="Enable" type="checkbox" tabindex="0" class="hidden">
+                    <label>{{tr "Enable"}}</label>
+                </div>
+            </div>
         </form>
     </div>
     <div class="actions">
@@ -207,7 +217,8 @@ function subscriptionFormData() {
         Currency: form.find('[name=Currency]').val(),
         Group: form.find('[name=Group]').val().trim(),
         Link: form.find('[name=Link]').val().trim(),
-        Note: form.find('[name=Note]').val().trim()
+        Note: form.find('[name=Note]').val().trim(),
+        Enable: form.find('[name=Enable]').is(':checked') ? 'on' : 'off'
     };
 }
 function addOrEditSubscription(subscription) {
@@ -225,6 +236,9 @@ function addOrEditSubscription(subscription) {
     form.find('[name=Group]').val(current.Group || 'Default');
     form.find('[name=Link]').val(current.Link || '');
     form.find('[name=Note]').val(current.Note || '');
+    const enableCheckbox = form.find('.subscription-enable.checkbox');
+    enableCheckbox.checkbox();
+    enableCheckbox.checkbox(!subscription || current.Enable ? 'set checked' : 'set unchecked');
     showFormModal('.subscription.modal', '#subscriptionForm', '/api/subscription', subscriptionFormData, null, function () {
         NezhaDateWheel.init(form.closest('.subscription.modal'));
     });
@@ -284,7 +298,7 @@ function filterSubscriptionsByGroup(group) {
         }
         const hasEnd = row.dataset.hasEnd === '1';
         const remaining = parseInt(row.dataset.remainingDays, 10) || 0;
-        const isActive = !hasEnd || remaining >= 0;
+        const isActive = row.dataset.enabled === '1' && (!hasEnd || remaining >= 0);
         if (isActive && row.dataset.hasCost === '1') {
             const currency = row.dataset.costCurrency;
             addSubscriptionCost(monthlyCosts, currency, parseFloat(row.dataset.monthlyCost) || 0);

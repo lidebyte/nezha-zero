@@ -62,6 +62,7 @@ type subscriptionView struct {
 	Note           string
 	Group          string
 	Manual         bool
+	Enabled        bool
 	EditData       template.JS
 }
 
@@ -161,6 +162,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			CostCurrency:   costCurrency,
 			HasCost:        hasCost,
 			Group:          item.Group,
+			Enabled:        true,
 		})
 	}
 	singleton.SortedServerLock.RUnlock()
@@ -194,6 +196,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			Note:           item.Note,
 			Group:          item.Group,
 			Manual:         true,
+			Enabled:        !item.Disabled,
 			EditData:       item.MarshalForDashboard(),
 		})
 	}

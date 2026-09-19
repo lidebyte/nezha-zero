@@ -251,7 +251,7 @@ other = "告警類型"
 other = "一般告警"
 
 [ExpirationAlert]
-other = "到期告警"
+other = "伺服器到期告警"
 
 [AddExpirationReminderRule]
 other = "新增到期告警規則"

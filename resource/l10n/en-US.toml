@@ -251,7 +251,7 @@ other = "Alert Type"
 other = "Standard Alert"
 
 [ExpirationAlert]
-other = "Expiration Alert"
+other = "Server Expiration Alert"
 
 [AddExpirationReminderRule]
 other = "Add Expiration Reminder Rule"

@@ -251,7 +251,7 @@ other = "Tipo de alerta"
 other = "Alerta estándar"
 
 [ExpirationAlert]
-other = "Alerta de vencimiento"
+other = "Alerta de vencimiento del servidor"
 
 [AddExpirationReminderRule]
 other = "Agregar regla de aviso de vencimiento"

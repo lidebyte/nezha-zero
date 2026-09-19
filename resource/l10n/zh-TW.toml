@@ -1263,6 +1263,12 @@ other = "匯率服務商"
 [CurrencyAPIKey]
 other = "匯率 API Key"
 
+[CurrencyAPIKeyApplyHint]
+other = "申請匯率 API 金鑰："
+
+[MonthlyCurrencyAPIRequestsUsed]
+other = "本月已用 API 請求數"
+
 [BaseCurrency]
 other = "基準貨幣"
 

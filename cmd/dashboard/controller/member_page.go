@@ -314,6 +314,7 @@ func (mp *memberPage) setting(c *gin.Context) {
 		geoIPUpdatedAt = geoip.UpdatedAt().In(loc).Format("2006-01-02 15:04:05")
 	}
 	_, currencyRatesUpdatedAt, _ := singleton.CurrencyRateSnapshot()
+	currencyUsage, currencyUsageAvailable, _ := singleton.CurrencyUsageSnapshot()
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/setting", mygin.CommonEnvironment(c, gin.H{
 		"Title":                  singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Settings"}),
 		"Languages":              model.Languages,
@@ -322,6 +323,9 @@ func (mp *memberPage) setting(c *gin.Context) {
 		"GeoIPUpdatedAt":         geoIPUpdatedAt,
 		"Currencies":             model.SortedCurrencies(),
 		"CurrencyRatesUpdatedAt": subscriptionDateTime(currencyRatesUpdatedAt),
+		"CurrencyUsageAvailable": currencyUsageAvailable,
+		"CurrencyUsageUsed":      currencyUsage.MonthlyUsed,
+		"CurrencyUsageLimit":     currencyUsage.MonthlyLimit,
 	}))
 }
 

@@ -33,6 +33,16 @@ type CurrencyRate struct {
 	FetchedAt time.Time `gorm:"index"`
 }
 
+// CurrencyUsage stores the monthly quota snapshot reported by a currency
+// provider. It is kept separately from configuration and exchange-rate rows.
+type CurrencyUsage struct {
+	Common
+	Provider     string    `gorm:"size:16;uniqueIndex"`
+	MonthlyUsed  int64     `gorm:"not null"`
+	MonthlyLimit int64     `gorm:"not null"`
+	FetchedAt    time.Time `gorm:"index"`
+}
+
 var Currencies = []Currency{
 	{Code: "CNY", Name: "Chinese Yuan", Symbol: "¥"},
 	{Code: "USD", Name: "US Dollar", Symbol: "$"},

@@ -1264,6 +1264,12 @@ other = "Exchange Rate Provider"
 [CurrencyAPIKey]
 other = "Exchange Rate API Key"
 
+[CurrencyAPIKeyApplyHint]
+other = "Get an exchange rate API key:"
+
+[MonthlyCurrencyAPIRequestsUsed]
+other = "API requests used this month"
+
 [BaseCurrency]
 other = "Base Currency"
 

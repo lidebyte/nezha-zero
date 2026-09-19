@@ -1702,6 +1702,11 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		})
 		return
 	}
+	if oldConf.CurrencyProvider != singleton.Conf.CurrencyProvider || oldConf.CurrencyAPIKey != singleton.Conf.CurrencyAPIKey {
+		if err := singleton.DB.Unscoped().Where("1 = 1").Delete(&model.CurrencyUsage{}).Error; err != nil {
+			log.Printf("NEZHA>> clear currency API usage after settings update failed: %v", err)
+		}
+	}
 	if !oldConf.EnableSubscription && singleton.Conf.EnableSubscription {
 		go singleton.CheckExpirationReminders()
 	}

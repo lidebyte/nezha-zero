@@ -48,6 +48,29 @@
         color: rgba(255, 255, 255, 0.45) !important;
     }
 
+    .currency-api-key-help {
+        margin-left: 0.2rem;
+        cursor: help;
+    }
+
+    .currency-api-key-help > .icon {
+        margin: 0 !important;
+        font-size: 0.85em;
+        color: rgba(0, 0, 0, 0.45);
+    }
+
+    .currency-rate-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        column-gap: 1.25rem;
+        row-gap: 0.25rem;
+    }
+
+    html[nz-theme='dark'] .currency-api-key-help > .icon {
+        color: rgba(255, 255, 255, 0.45);
+    }
+
     #passwordLoginSettings .admin-password-prompt {
         display: none;
         margin-top: 0.45rem;
@@ -261,12 +284,22 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label>{{tr "CurrencyAPIKey"}}</label>
+                    <label>{{tr "CurrencyAPIKey"}}<span id="currencyApiKeyHelp" class="currency-api-key-help" tabindex="0"><i class="question circle outline icon"></i></span></label>
+                    <div id="currencyApiKeyPopup" class="ui flowing popup transition hidden">
+                        <div>{{tr "CurrencyAPIKeyApplyHint"}}</div>
+                        <div>
+                            <a href="https://fixer.io/#pricing_plan" target="_blank" rel="noopener noreferrer">fixer.io</a>
+                            · <a href="https://apilayer.com/marketplace/fixer-api" target="_blank" rel="noopener noreferrer">APILayer</a>
+                        </div>
+                    </div>
                     <input name="CurrencyAPIKey" type="password" autocomplete="new-password" value="{{if .Conf.CurrencyAPIKey}}********{{end}}">
                 </div>
                 <div class="field">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
-                        <small>{{tr "ExchangeRatesLastUpdated"}}: {{if .CurrencyRatesUpdatedAt}}{{.CurrencyRatesUpdatedAt}}{{else}}{{tr "ExchangeRatesNeverUpdated"}}{{end}}</small>
+                        <div class="currency-rate-meta">
+                            <small>{{tr "ExchangeRatesLastUpdated"}}: {{if .CurrencyRatesUpdatedAt}}{{.CurrencyRatesUpdatedAt}}{{else}}{{tr "ExchangeRatesNeverUpdated"}}{{end}}</small>
+                            {{if .CurrencyUsageAvailable}}<small>{{tr "MonthlyCurrencyAPIRequestsUsed"}}: {{.CurrencyUsageUsed}} / {{.CurrencyUsageLimit}}</small>{{end}}
+                        </div>
                         <button class="ui button" id="currencyRefreshBtn" type="button">{{tr "RefreshExchangeRates"}}</button>
                     </div>
                 </div>
@@ -835,6 +868,13 @@
     $('.checkbox.template-handle-no-route').checkbox('set checked')
     {{ end }}
     togglePasswordLoginSettings();
+    $('#currencyApiKeyHelp').popup({
+        popup: $('#currencyApiKeyPopup'),
+        on: 'hover',
+        hoverable: true,
+        position: 'top left',
+        delay: {show: 120, hide: 300}
+    });
     $('#currencyRefreshBtn').on('click', function () {
         const $btn = $(this);
         $btn.addClass('loading disabled');

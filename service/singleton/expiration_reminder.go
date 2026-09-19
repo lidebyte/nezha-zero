@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -213,6 +214,40 @@ const maxCurrencyResponseSize = 1 << 20
 
 var currencyHTTPClient = &http.Client{Timeout: 15 * time.Second}
 
+func currencyUsageFromHeader(header http.Header) (used, limit int64, ok bool) {
+	limit, err := strconv.ParseInt(strings.TrimSpace(header.Get("X-RateLimit-Limit-Month")), 10, 64)
+	if err != nil || limit <= 0 {
+		return 0, 0, false
+	}
+	remaining, err := strconv.ParseInt(strings.TrimSpace(header.Get("X-RateLimit-Remaining-Month")), 10, 64)
+	if err != nil || remaining < 0 {
+		return 0, 0, false
+	}
+	used = limit - remaining
+	if used < 0 {
+		used = 0
+	} else if used > limit {
+		used = limit
+	}
+	return used, limit, true
+}
+
+func storeCurrencyUsage(provider string, header http.Header, fetchedAt time.Time) error {
+	if provider != "apilayer" {
+		return nil
+	}
+	used, limit, ok := currencyUsageFromHeader(header)
+	if !ok {
+		return nil
+	}
+	var usage model.CurrencyUsage
+	return DB.Where("provider = ?", provider).Assign(map[string]interface{}{
+		"monthly_used":  used,
+		"monthly_limit": limit,
+		"fetched_at":    fetchedAt,
+	}).FirstOrCreate(&usage, model.CurrencyUsage{Provider: provider}).Error
+}
+
 type currencyAPIResponse struct {
 	Success *bool              `json:"success"`
 	Base    string             `json:"base"`
@@ -273,6 +308,9 @@ func RefreshCurrencyRates() error {
 		return fmt.Errorf("request currency provider: %w", err)
 	}
 	defer resp.Body.Close()
+	if err := storeCurrencyUsage(Conf.CurrencyProvider, resp.Header, time.Now()); err != nil {
+		log.Printf("NEZHA>> store currency API usage failed: %v", err)
+	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxCurrencyResponseSize+1))
 	if err != nil {
 		return fmt.Errorf("read currency provider response: %w", err)
@@ -346,4 +384,24 @@ func CurrencyRateSnapshot() (map[string]float64, time.Time, error) {
 		}
 	}
 	return rates, fetchedAt, nil
+}
+
+func CurrencyUsageSnapshot() (model.CurrencyUsage, bool, error) {
+	var usage model.CurrencyUsage
+	if Conf.CurrencyProvider != "apilayer" {
+		return usage, false, nil
+	}
+	result := DB.Where("provider = ?", Conf.CurrencyProvider).Limit(1).Find(&usage)
+	if result.Error != nil {
+		return usage, false, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return usage, false, nil
+	}
+	now := time.Now()
+	fetchedAt := usage.FetchedAt.In(now.Location())
+	if usage.MonthlyLimit <= 0 || fetchedAt.Year() != now.Year() || fetchedAt.Month() != now.Month() {
+		return usage, false, nil
+	}
+	return usage, true, nil
 }

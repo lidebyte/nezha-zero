@@ -1255,6 +1255,12 @@ other = "Proveedor de tipos de cambio"
 [CurrencyAPIKey]
 other = "Clave API de tipos de cambio"
 
+[CurrencyAPIKeyApplyHint]
+other = "Obtener una clave API de tipos de cambio:"
+
+[MonthlyCurrencyAPIRequestsUsed]
+other = "Solicitudes de API utilizadas este mes"
+
 [BaseCurrency]
 other = "Moneda base"
 

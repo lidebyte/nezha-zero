@@ -75,7 +75,7 @@ func InitDBFromPath(path string) {
 		model.Notification{}, model.AlertRule{}, model.Monitor{},
 		model.MonitorHistory{}, model.Cron{}, model.Transfer{},
 		model.ApiToken{}, model.NAT{}, model.DDNSProfile{},
-		model.AuditLog{}, model.Subscription{}, model.CurrencyRate{})
+		model.AuditLog{}, model.Subscription{}, model.CurrencyRate{}, model.CurrencyUsage{})
 	if err != nil {
 		panic(err)
 	}

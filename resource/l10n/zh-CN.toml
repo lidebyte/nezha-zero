@@ -1218,6 +1218,18 @@ other = "剩余天数"
 [SubscriptionGroup]
 other = "分组"
 
+[AllSubscriptionGroups]
+other = "全部分组"
+
+[SubscriptionIDHint]
+other = "以 S 开头的 ID 表示该订阅从服务器信息同步，相关内容需要前往“服务器”页面修改。"
+
+[MonthlySubscriptionCost]
+other = "月度订阅费用"
+
+[YearlySubscriptionCost]
+other = "年度订阅费用"
+
 [PriceUnit]
 other = "帐单周期"
 
@@ -1261,7 +1273,7 @@ other = "汇率最后更新时间"
 other = "尚未更新"
 
 [BatchEditSubscriptionGroup]
-other = "批量修改订阅分组"
+other = "批量修改分组"
 
 [InputSubscriptionGroupName]
 other = "请输入订阅分组名称"

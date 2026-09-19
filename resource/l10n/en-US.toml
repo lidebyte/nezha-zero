@@ -1219,6 +1219,18 @@ other = "Days Remaining"
 [SubscriptionGroup]
 other = "Group"
 
+[AllSubscriptionGroups]
+other = "All groups"
+
+[SubscriptionIDHint]
+other = "IDs beginning with S are synchronized from server information. Edit them on the Servers page."
+
+[MonthlySubscriptionCost]
+other = "Monthly subscription cost"
+
+[YearlySubscriptionCost]
+other = "Yearly subscription cost"
+
 [PriceUnit]
 other = "Billing Cycle"
 

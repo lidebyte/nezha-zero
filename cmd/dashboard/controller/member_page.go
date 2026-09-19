@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -50,8 +51,13 @@ type subscriptionView struct {
 	HasEndDate     bool
 	Price          string
 	PriceUnit      string
+	PriceUnitLabel string
 	Currency       string
 	ConvertedPrice string
+	MonthlyCost    float64
+	YearlyCost     float64
+	CostCurrency   string
+	HasCost        bool
 	Link           string
 	Note           string
 	Group          string
@@ -72,7 +78,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		return
 	}
 	now := time.Now()
-	rates, ratesUpdatedAt, _ := singleton.CurrencyRateSnapshot()
+	rates, _, _ := singleton.CurrencyRateSnapshot()
 	convertPrice := func(price, currency string) string {
 		if !singleton.Conf.EnableCurrencyConversion || currency == "" {
 			return ""
@@ -87,10 +93,57 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		}
 		return fmt.Sprintf("%.2f %s", converted, singleton.Conf.BaseCurrency)
 	}
+	recurringCost := func(price, priceUnit, currency string) (float64, float64, string, bool) {
+		amount, ok := model.ParsePriceAmount(price)
+		months := model.SubscriptionCycleMonths(priceUnit)
+		currency = strings.ToUpper(strings.TrimSpace(currency))
+		if !ok || months == 0 || currency == "" {
+			return 0, 0, "", false
+		}
+		if singleton.Conf.EnableCurrencyConversion {
+			var err error
+			amount, err = model.ConvertCurrency(amount, currency, singleton.Conf.BaseCurrency, rates)
+			if err != nil {
+				return 0, 0, "", false
+			}
+			currency = singleton.Conf.BaseCurrency
+		}
+		monthly := amount / float64(months)
+		return monthly, monthly * 12, currency, true
+	}
+	formatPriceUnit := func(value string) string {
+		messageID := ""
+		switch model.SubscriptionCycleMonths(value) {
+		case 1:
+			messageID = "PNECycleMonthly"
+		case 3:
+			messageID = "PNECycleQuarterly"
+		case 6:
+			messageID = "PNECycleHalfYear"
+		case 12:
+			messageID = "PNECycleYearly"
+		case 24:
+			messageID = "BillingCycleTwoYears"
+		case 36:
+			messageID = "BillingCycleThreeYears"
+		case 60:
+			messageID = "BillingCycleFiveYears"
+		default:
+			normalized := strings.ToLower(strings.TrimSpace(value))
+			if normalized == "永续" || normalized == "永久" || normalized == "lifetime" {
+				messageID = "PNELifetime"
+			}
+		}
+		if messageID == "" {
+			return value
+		}
+		return singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: messageID})
+	}
 	rows := make([]subscriptionView, 0)
 	singleton.SortedServerLock.RLock()
 	for _, server := range singleton.SortedServerList {
 		item := model.ParseServerSubscription(server, now)
+		monthlyCost, yearlyCost, costCurrency, hasCost := recurringCost(item.Price, item.PriceUnit, item.Currency)
 		rows = append(rows, subscriptionView{
 			ID:             item.ServerID,
 			Name:           item.Name,
@@ -100,8 +153,13 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			HasEndDate:     !item.EndDate.IsZero(),
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
+			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
 			Currency:       item.Currency,
 			ConvertedPrice: convertPrice(item.Price, item.Currency),
+			MonthlyCost:    monthlyCost,
+			YearlyCost:     yearlyCost,
+			CostCurrency:   costCurrency,
+			HasCost:        hasCost,
 			Group:          item.Group,
 		})
 	}
@@ -115,6 +173,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		if currency == "" {
 			currency = model.DetectCurrency(item.Price)
 		}
+		monthlyCost, yearlyCost, costCurrency, hasCost := recurringCost(item.Price, item.PriceUnit, currency)
 		rows = append(rows, subscriptionView{
 			ID:             item.ID,
 			Name:           item.Name,
@@ -124,8 +183,13 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			HasEndDate:     !item.EndDate.IsZero(),
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
+			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
 			Currency:       currency,
 			ConvertedPrice: convertPrice(item.Price, currency),
+			MonthlyCost:    monthlyCost,
+			YearlyCost:     yearlyCost,
+			CostCurrency:   costCurrency,
+			HasCost:        hasCost,
 			Link:           normalizeSubscriptionLink(item.Link),
 			Note:           item.Note,
 			Group:          item.Group,
@@ -134,10 +198,9 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		})
 	}
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/subscription", mygin.CommonEnvironment(c, gin.H{
-		"Title":          singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "SubscriptionManagement"}),
-		"Subscriptions":  rows,
-		"Currencies":     model.SortedCurrencies(),
-		"RatesUpdatedAt": subscriptionDateTime(ratesUpdatedAt),
+		"Title":         singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "SubscriptionManagement"}),
+		"Subscriptions": rows,
+		"Currencies":    model.SortedCurrencies(),
 	}))
 }
 

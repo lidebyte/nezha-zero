@@ -212,7 +212,10 @@ type currencyAPIResponse struct {
 
 func loadCurrencyRates() {
 	if _, err := Cron.AddFunc("0 0 2 * * *", func() {
-		if err := RefreshCurrencyRates(); err != nil && Conf.EnableSubscription && Conf.EnableCurrencyConversion {
+		if !Conf.EnableSubscription || !Conf.EnableCurrencyConversion {
+			return
+		}
+		if err := RefreshCurrencyRates(); err != nil {
 			log.Printf("NEZHA>> refresh currency rates failed: %v", err)
 		}
 	}); err != nil {
@@ -221,9 +224,6 @@ func loadCurrencyRates() {
 }
 
 func RefreshCurrencyRates() error {
-	if !Conf.EnableSubscription || !Conf.EnableCurrencyConversion {
-		return errors.New("currency conversion is disabled")
-	}
 	apiKey := strings.TrimSpace(Conf.CurrencyAPIKey)
 	if apiKey == "" {
 		return errors.New("currency API key is empty")

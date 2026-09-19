@@ -86,7 +86,7 @@ function postJson(url, data) {
     });
 }
 
-function showFormModal(modelSelector, formID, URL, getData, onSuccess) {
+function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible) {
   const $modal = $(modelSelector);
 
   // 初始化 modal 一次
@@ -138,6 +138,10 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess) {
 
       onHidden: function () {
         $(document).off("keydown.modalEsc");
+      },
+
+      onVisible: function () {
+        if (onVisible) onVisible();
       },
 
       onApprove: function () {

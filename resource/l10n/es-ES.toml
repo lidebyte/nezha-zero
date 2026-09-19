@@ -1210,6 +1210,18 @@ other = "Días restantes"
 [SubscriptionGroup]
 other = "Grupo"
 
+[AllSubscriptionGroups]
+other = "Todos los grupos"
+
+[SubscriptionIDHint]
+other = "Los ID que empiezan por S se sincronizan desde la información del servidor. Edítalos en la página Servidores."
+
+[MonthlySubscriptionCost]
+other = "Coste mensual de suscripciones"
+
+[YearlySubscriptionCost]
+other = "Coste anual de suscripciones"
+
 [PriceUnit]
 other = "Ciclo de facturación"
 

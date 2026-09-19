@@ -1218,6 +1218,18 @@ other = "剩餘天數"
 [SubscriptionGroup]
 other = "分組"
 
+[AllSubscriptionGroups]
+other = "全部分組"
+
+[SubscriptionIDHint]
+other = "以 S 開頭的 ID 表示該訂閱由伺服器資訊同步，相關內容需要前往「伺服器」頁面修改。"
+
+[MonthlySubscriptionCost]
+other = "月度訂閱費用"
+
+[YearlySubscriptionCost]
+other = "年度訂閱費用"
+
 [PriceUnit]
 other = "帳單週期"
 

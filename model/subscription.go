@@ -244,7 +244,7 @@ func ParseServerSubscription(server *Server, now time.Time) ServerSubscription {
 	if result.EndDate.IsZero() || !subscriptionAutoRenewal(note.BillingDataMod.AutoRenewal) {
 		return result
 	}
-	months := subscriptionCycleMonths(note.BillingDataMod.Cycle)
+	months := SubscriptionCycleMonths(note.BillingDataMod.Cycle)
 	if months == 0 {
 		return result
 	}
@@ -309,7 +309,7 @@ func subscriptionAutoRenewal(raw json.RawMessage) bool {
 	return value == "1" || strings.EqualFold(value, "true")
 }
 
-func subscriptionCycleMonths(cycle string) int {
+func SubscriptionCycleMonths(cycle string) int {
 	switch strings.ToLower(strings.TrimSpace(cycle)) {
 	case "月", "mo", "month", "monthly", "m":
 		return 1

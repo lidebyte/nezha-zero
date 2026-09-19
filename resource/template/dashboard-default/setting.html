@@ -244,28 +244,31 @@
                         <label>{{tr "EnableCurrencyConversion"}}</label>
                     </div>
                 </div>
-                <div class="two fields">
-                    <div class="field">
-                        <label>{{tr "CurrencyProvider"}}</label>
-                        <select name="CurrencyProvider" class="ui fluid dropdown">
-                            <option value="fixer" {{if eq .Conf.CurrencyProvider "fixer"}}selected{{end}}>fixer.io</option>
-                            <option value="apilayer" {{if eq .Conf.CurrencyProvider "apilayer"}}selected{{end}}>apilayer.com</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label>{{tr "BaseCurrency"}}</label>
-                        <select name="BaseCurrency" class="ui fluid dropdown">
-                            {{range .Currencies}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}} ({{.Symbol}})</option>{{end}}
-                        </select>
-                    </div>
+                <div class="field">
+                    <label>{{tr "BaseCurrency"}}</label>
+                    <select name="BaseCurrency" class="ui fluid dropdown">
+                        {{range .Currencies}}{{if eq .Code "CNY"}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                        {{range .Currencies}}{{if eq .Code "USD"}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                        {{range .Currencies}}{{if eq .Code "EUR"}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                        {{range .Currencies}}{{if and (ne .Code "CNY") (ne .Code "USD") (ne .Code "EUR")}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>{{tr "CurrencyProvider"}}</label>
+                    <select name="CurrencyProvider" class="ui fluid dropdown">
+                        <option value="fixer" {{if eq .Conf.CurrencyProvider "fixer"}}selected{{end}}>fixer.io</option>
+                        <option value="apilayer" {{if eq .Conf.CurrencyProvider "apilayer"}}selected{{end}}>apilayer.com</option>
+                    </select>
                 </div>
                 <div class="field">
                     <label>{{tr "CurrencyAPIKey"}}</label>
                     <input name="CurrencyAPIKey" type="password" autocomplete="new-password" value="{{if .Conf.CurrencyAPIKey}}********{{end}}">
                 </div>
                 <div class="field">
-                    <button class="ui button" id="currencyRefreshBtn" type="button">{{tr "RefreshExchangeRates"}}</button>
-                    <small>{{tr "ExchangeRatesLastUpdated"}}: {{if .CurrencyRatesUpdatedAt}}{{.CurrencyRatesUpdatedAt}}{{else}}{{tr "ExchangeRatesNeverUpdated"}}{{end}}</small>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+                        <small>{{tr "ExchangeRatesLastUpdated"}}: {{if .CurrencyRatesUpdatedAt}}{{.CurrencyRatesUpdatedAt}}{{else}}{{tr "ExchangeRatesNeverUpdated"}}{{end}}</small>
+                        <button class="ui button" id="currencyRefreshBtn" type="button">{{tr "RefreshExchangeRates"}}</button>
+                    </div>
                 </div>
             </div>
             <div class="field">

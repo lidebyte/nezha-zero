@@ -349,6 +349,7 @@ type ServerSubscription struct {
 	Name      string
 	StartDate time.Time
 	EndDate   time.Time
+	Lifetime  bool
 	Price     string
 	PriceUnit string
 	Currency  string
@@ -378,6 +379,7 @@ func ParseServerSubscription(server *Server, now time.Time) ServerSubscription {
 	}
 	result.StartDate, _ = ParseSubscriptionDate(note.BillingDataMod.StartDate)
 	result.EndDate, _ = ParseSubscriptionDate(note.BillingDataMod.EndDate)
+	result.Lifetime = strings.Contains(note.BillingDataMod.EndDate, "0000-00-00")
 	result.Price = rawSubscriptionValue(note.BillingDataMod.Amount)
 	result.PriceUnit = strings.TrimSpace(note.BillingDataMod.Cycle)
 	result.Currency = DetectCurrency(result.Price)

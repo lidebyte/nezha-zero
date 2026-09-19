@@ -59,6 +59,12 @@ func TestParseServerSubscription(t *testing.T) {
 	if got.Currency != "USD" {
 		t.Fatalf("unexpected currency: %q", got.Currency)
 	}
+
+	server.PublicNote = `{"billingDataMod":{"endDate":"0000-00-00","cycle":"年","amount":"$100"}}`
+	got = ParseServerSubscription(server, now)
+	if !got.Lifetime || !got.EndDate.IsZero() {
+		t.Fatalf("lifetime server subscription was not recognized: %+v", got)
+	}
 }
 
 func TestSubscriptionMarshalForDashboardEscapesScriptContent(t *testing.T) {

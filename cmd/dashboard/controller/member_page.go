@@ -49,6 +49,7 @@ type subscriptionView struct {
 	EndDate        string
 	RemainingDays  int
 	HasEndDate     bool
+	Lifetime       bool
 	Price          string
 	PriceUnit      string
 	PriceUnitLabel string
@@ -81,6 +82,10 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	}
 	now := time.Now()
 	rates, _, _ := singleton.CurrencyRateSnapshot()
+	isLifetimeCycle := func(value string) bool {
+		value = strings.ToLower(strings.TrimSpace(value))
+		return value == "永续" || value == "永久" || value == "lifetime"
+	}
 	convertPrice := func(price, currency string) string {
 		if !singleton.Conf.EnableCurrencyConversion || currency == "" {
 			return ""
@@ -97,7 +102,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	}
 	recurringCost := func(price, priceUnit, currency string) (float64, float64, string, bool, string) {
 		cycle := strings.ToLower(strings.TrimSpace(priceUnit))
-		if cycle == "永续" || cycle == "永久" || cycle == "lifetime" {
+		if isLifetimeCycle(cycle) {
 			return 0, 0, "", false, ""
 		}
 		amount, ok := model.ParsePriceAmount(price)
@@ -150,8 +155,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		case 60:
 			messageID = "BillingCycleFiveYears"
 		default:
-			normalized := strings.ToLower(strings.TrimSpace(value))
-			if normalized == "永续" || normalized == "永久" || normalized == "lifetime" {
+			if isLifetimeCycle(value) {
 				messageID = "PNELifetime"
 			}
 		}
@@ -164,7 +168,11 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	singleton.SortedServerLock.RLock()
 	for _, server := range singleton.SortedServerList {
 		item := model.ParseServerSubscription(server, now)
-		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, item.PriceUnit, item.Currency)
+		costCycle := item.PriceUnit
+		if item.Lifetime {
+			costCycle = "永续"
+		}
+		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, costCycle, item.Currency)
 		remainingDays := model.SubscriptionRemainingDays(now, item.EndDate)
 		if !item.EndDate.IsZero() && remainingDays < 0 {
 			costReason = ""
@@ -176,6 +184,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			EndDate:        subscriptionDate(item.EndDate),
 			RemainingDays:  remainingDays,
 			HasEndDate:     !item.EndDate.IsZero(),
+			Lifetime:       item.Lifetime,
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
@@ -212,6 +221,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			EndDate:        subscriptionDate(item.EndDate),
 			RemainingDays:  remainingDays,
 			HasEndDate:     !item.EndDate.IsZero(),
+			Lifetime:       isLifetimeCycle(item.PriceUnit),
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),

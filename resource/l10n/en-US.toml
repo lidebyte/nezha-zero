@@ -1234,6 +1234,21 @@ other = "Monthly subscription cost"
 [YearlySubscriptionCost]
 other = "Yearly subscription cost"
 
+[SubscriptionCostInvalidPrice]
+other = "Excluded from monthly and yearly totals: price format is invalid"
+
+[SubscriptionCostMissingCurrency]
+other = "Excluded from monthly and yearly totals: billing currency is missing"
+
+[SubscriptionCostMissingCycle]
+other = "Excluded from monthly and yearly totals: billing cycle is missing"
+
+[SubscriptionCostInvalidCycle]
+other = "Excluded from monthly and yearly totals: billing cycle is not recognized"
+
+[SubscriptionCostMissingRate]
+other = "Excluded from monthly and yearly totals: exchange rate is unavailable"
+
 [PriceUnit]
 other = "Billing Cycle"
 

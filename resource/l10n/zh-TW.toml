@@ -1233,6 +1233,21 @@ other = "月度訂閱費用"
 [YearlySubscriptionCost]
 other = "年度訂閱費用"
 
+[SubscriptionCostInvalidPrice]
+other = "未計入月度和年度費用統計：價格格式無法識別"
+
+[SubscriptionCostMissingCurrency]
+other = "未計入月度和年度費用統計：缺少帳單貨幣"
+
+[SubscriptionCostMissingCycle]
+other = "未計入月度和年度費用統計：缺少帳單週期"
+
+[SubscriptionCostInvalidCycle]
+other = "未計入月度和年度費用統計：帳單週期無法識別"
+
+[SubscriptionCostMissingRate]
+other = "未計入月度和年度費用統計：無法取得換算匯率"
+
 [PriceUnit]
 other = "帳單週期"
 

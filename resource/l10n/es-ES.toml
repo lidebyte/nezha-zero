@@ -1225,6 +1225,21 @@ other = "Coste mensual de suscripciones"
 [YearlySubscriptionCost]
 other = "Coste anual de suscripciones"
 
+[SubscriptionCostInvalidPrice]
+other = "Excluida de los totales mensuales y anuales: el formato del precio no es válido"
+
+[SubscriptionCostMissingCurrency]
+other = "Excluida de los totales mensuales y anuales: falta la moneda de facturación"
+
+[SubscriptionCostMissingCycle]
+other = "Excluida de los totales mensuales y anuales: falta el ciclo de facturación"
+
+[SubscriptionCostInvalidCycle]
+other = "Excluida de los totales mensuales y anuales: no se reconoce el ciclo de facturación"
+
+[SubscriptionCostMissingRate]
+other = "Excluida de los totales mensuales y anuales: no hay un tipo de cambio disponible"
+
 [PriceUnit]
 other = "Ciclo de facturación"
 

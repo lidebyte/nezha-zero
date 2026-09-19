@@ -1233,6 +1233,21 @@ other = "月度订阅费用"
 [YearlySubscriptionCost]
 other = "年度订阅费用"
 
+[SubscriptionCostInvalidPrice]
+other = "未计入月度和年度费用统计：价格格式无法识别"
+
+[SubscriptionCostMissingCurrency]
+other = "未计入月度和年度费用统计：缺少帐单货币"
+
+[SubscriptionCostMissingCycle]
+other = "未计入月度和年度费用统计：缺少帐单周期"
+
+[SubscriptionCostInvalidCycle]
+other = "未计入月度和年度费用统计：帐单周期无法识别"
+
+[SubscriptionCostMissingRate]
+other = "未计入月度和年度费用统计：无法获取换算汇率"
+
 [PriceUnit]
 other = "帐单周期"
 

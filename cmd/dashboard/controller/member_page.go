@@ -58,6 +58,7 @@ type subscriptionView struct {
 	YearlyCost     float64
 	CostCurrency   string
 	HasCost        bool
+	CostReason     string
 	Link           string
 	Note           string
 	Group          string
@@ -94,23 +95,42 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		}
 		return fmt.Sprintf("%.2f %s", converted, singleton.Conf.BaseCurrency)
 	}
-	recurringCost := func(price, priceUnit, currency string) (float64, float64, string, bool) {
+	recurringCost := func(price, priceUnit, currency string) (float64, float64, string, bool, string) {
+		cycle := strings.ToLower(strings.TrimSpace(priceUnit))
+		if cycle == "永续" || cycle == "永久" || cycle == "lifetime" {
+			return 0, 0, "", false, ""
+		}
 		amount, ok := model.ParsePriceAmount(price)
-		months := model.SubscriptionCycleMonths(priceUnit)
+		if strings.TrimSpace(price) == "" {
+			return 0, 0, "", false, ""
+		}
+		if !ok {
+			return 0, 0, "", false, "SubscriptionCostInvalidPrice"
+		}
+		if amount == 0 {
+			return 0, 0, "", false, ""
+		}
 		currency = strings.ToUpper(strings.TrimSpace(currency))
-		if !ok || months == 0 || currency == "" {
-			return 0, 0, "", false
+		if currency == "" {
+			return 0, 0, "", false, "SubscriptionCostMissingCurrency"
+		}
+		if cycle == "" {
+			return 0, 0, "", false, "SubscriptionCostMissingCycle"
+		}
+		months := model.SubscriptionCycleMonths(cycle)
+		if months == 0 {
+			return 0, 0, "", false, "SubscriptionCostInvalidCycle"
 		}
 		if singleton.Conf.EnableCurrencyConversion {
 			var err error
 			amount, err = model.ConvertCurrency(amount, currency, singleton.Conf.BaseCurrency, rates)
 			if err != nil {
-				return 0, 0, "", false
+				return 0, 0, "", false, "SubscriptionCostMissingRate"
 			}
 			currency = singleton.Conf.BaseCurrency
 		}
 		monthly := amount / float64(months)
-		return monthly, monthly * 12, currency, true
+		return monthly, monthly * 12, currency, true, ""
 	}
 	formatPriceUnit := func(value string) string {
 		messageID := ""
@@ -144,13 +164,17 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	singleton.SortedServerLock.RLock()
 	for _, server := range singleton.SortedServerList {
 		item := model.ParseServerSubscription(server, now)
-		monthlyCost, yearlyCost, costCurrency, hasCost := recurringCost(item.Price, item.PriceUnit, item.Currency)
+		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, item.PriceUnit, item.Currency)
+		remainingDays := model.SubscriptionRemainingDays(now, item.EndDate)
+		if !item.EndDate.IsZero() && remainingDays < 0 {
+			costReason = ""
+		}
 		rows = append(rows, subscriptionView{
 			ID:             item.ServerID,
 			Name:           item.Name,
 			StartDate:      subscriptionDate(item.StartDate),
 			EndDate:        subscriptionDate(item.EndDate),
-			RemainingDays:  model.SubscriptionRemainingDays(now, item.EndDate),
+			RemainingDays:  remainingDays,
 			HasEndDate:     !item.EndDate.IsZero(),
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
@@ -161,6 +185,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,
 			HasCost:        hasCost,
+			CostReason:     costReason,
 			Group:          item.Group,
 			Enabled:        true,
 		})
@@ -175,13 +200,17 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		if currency == "" {
 			currency = model.DetectCurrency(item.Price)
 		}
-		monthlyCost, yearlyCost, costCurrency, hasCost := recurringCost(item.Price, item.PriceUnit, currency)
+		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, item.PriceUnit, currency)
+		remainingDays := model.SubscriptionRemainingDays(now, item.EndDate)
+		if item.Disabled || (!item.EndDate.IsZero() && remainingDays < 0) {
+			costReason = ""
+		}
 		rows = append(rows, subscriptionView{
 			ID:             item.ID,
 			Name:           item.Name,
 			StartDate:      subscriptionDate(item.StartDate),
 			EndDate:        subscriptionDate(item.EndDate),
-			RemainingDays:  model.SubscriptionRemainingDays(now, item.EndDate),
+			RemainingDays:  remainingDays,
 			HasEndDate:     !item.EndDate.IsZero(),
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
@@ -192,6 +221,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,
 			HasCost:        hasCost,
+			CostReason:     costReason,
 			Link:           normalizeSubscriptionLink(item.Link),
 			Note:           item.Note,
 			Group:          item.Group,

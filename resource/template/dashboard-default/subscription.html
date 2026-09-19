@@ -66,6 +66,15 @@
 .subscription-id-hint > .icon {
     margin: 0 !important;
 }
+.subscription-cost-hint {
+    margin-left: .25rem;
+    color: rgba(0,0,0,.35);
+    cursor: help;
+    font-size: .72em;
+}
+.subscription-cost-hint > .icon {
+    margin: 0 !important;
+}
 .currency-priority-dropdown .menu > .item[data-value="EUR"] {
     margin-bottom: 0.25rem !important;
     border-bottom: 1px solid rgba(34, 36, 38, 0.15) !important;
@@ -136,7 +145,7 @@ html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"
                         <td>{{$subscription.StartDate}}</td>
                         <td>{{$subscription.EndDate}}</td>
                         <td class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if eq $subscription.PriceUnitLabel (tr "PNELifetime")}}subscription-days-lifetime{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if eq $subscription.PriceUnitLabel (tr "PNELifetime")}}{{tr "Lifetime"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
-                        <td>{{if $subscription.Price}}{{$subscription.Price}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.Price}}{{$subscription.Price}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
                         <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
                         {{if $.Conf.EnableCurrencyConversion}}<td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>{{end}}

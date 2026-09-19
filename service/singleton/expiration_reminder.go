@@ -281,7 +281,6 @@ func RefreshCurrencyRates() error {
 
 	params := url.Values{}
 	params.Set("base", "EUR")
-	params.Set("symbols", strings.Join(model.CurrencyCodes(), ","))
 	var endpoint string
 	var req *http.Request
 	var err error

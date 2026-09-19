@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"time"
@@ -28,6 +30,7 @@ func (mp *memberPage) serve() {
 		Redirect:   "/login",
 	}))
 	mr.GET("/server", mp.server)
+	mr.GET("/subscription", mp.subscription)
 	mr.GET("/monitor", mp.monitor)
 	mr.GET("/cron", mp.cron)
 	mr.GET("/notification", mp.notification)
@@ -36,6 +39,113 @@ func (mp *memberPage) serve() {
 	mr.GET("/setting", mp.setting)
 	mr.GET("/log", mp.log)
 	mr.GET("/api", mp.api)
+}
+
+type subscriptionView struct {
+	ID             uint64
+	Name           string
+	StartDate      string
+	EndDate        string
+	RemainingDays  int
+	HasEndDate     bool
+	Price          string
+	PriceUnit      string
+	Currency       string
+	ConvertedPrice string
+	Link           string
+	Note           string
+	Group          string
+	Manual         bool
+	EditData       template.JS
+}
+
+func subscriptionDate(value time.Time) string {
+	if value.IsZero() {
+		return "-"
+	}
+	return value.Format("2006-01-02")
+}
+
+func (mp *memberPage) subscription(c *gin.Context) {
+	if !singleton.Conf.EnableSubscription {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	now := time.Now()
+	rates, ratesUpdatedAt, _ := singleton.CurrencyRateSnapshot()
+	convertPrice := func(price, currency string) string {
+		if !singleton.Conf.EnableCurrencyConversion || currency == "" {
+			return ""
+		}
+		amount, ok := model.ParsePriceAmount(price)
+		if !ok {
+			return ""
+		}
+		converted, err := model.ConvertCurrency(amount, currency, singleton.Conf.BaseCurrency, rates)
+		if err != nil {
+			return ""
+		}
+		return fmt.Sprintf("%.2f %s", converted, singleton.Conf.BaseCurrency)
+	}
+	rows := make([]subscriptionView, 0)
+	singleton.SortedServerLock.RLock()
+	for _, server := range singleton.SortedServerList {
+		item := model.ParseServerSubscription(server, now)
+		rows = append(rows, subscriptionView{
+			ID:             item.ServerID,
+			Name:           item.Name,
+			StartDate:      subscriptionDate(item.StartDate),
+			EndDate:        subscriptionDate(item.EndDate),
+			RemainingDays:  model.SubscriptionRemainingDays(now, item.EndDate),
+			HasEndDate:     !item.EndDate.IsZero(),
+			Price:          item.Price,
+			PriceUnit:      item.PriceUnit,
+			Currency:       item.Currency,
+			ConvertedPrice: convertPrice(item.Price, item.Currency),
+			Group:          item.Group,
+		})
+	}
+	singleton.SortedServerLock.RUnlock()
+
+	var subscriptions []model.Subscription
+	singleton.DB.Order("id").Find(&subscriptions)
+	for i := range subscriptions {
+		item := subscriptions[i]
+		currency := item.Currency
+		if currency == "" {
+			currency = model.DetectCurrency(item.Price)
+		}
+		rows = append(rows, subscriptionView{
+			ID:             item.ID,
+			Name:           item.Name,
+			StartDate:      subscriptionDate(item.StartDate),
+			EndDate:        subscriptionDate(item.EndDate),
+			RemainingDays:  model.SubscriptionRemainingDays(now, item.EndDate),
+			HasEndDate:     !item.EndDate.IsZero(),
+			Price:          item.Price,
+			PriceUnit:      item.PriceUnit,
+			Currency:       currency,
+			ConvertedPrice: convertPrice(item.Price, currency),
+			Link:           normalizeSubscriptionLink(item.Link),
+			Note:           item.Note,
+			Group:          item.Group,
+			Manual:         true,
+			EditData:       item.MarshalForDashboard(),
+		})
+	}
+	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/subscription", mygin.CommonEnvironment(c, gin.H{
+		"Title":          singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "SubscriptionManagement"}),
+		"Subscriptions":  rows,
+		"Currencies":     model.SortedCurrencies(),
+		"RatesUpdatedAt": subscriptionDateTime(ratesUpdatedAt),
+	}))
+}
+
+func subscriptionDateTime(value time.Time) string {
+	if value.IsZero() {
+		return ""
+	}
+	return value.Format("2006-01-02 15:04:05")
 }
 
 func (mp *memberPage) api(c *gin.Context) {
@@ -87,18 +197,24 @@ func (mp *memberPage) notification(c *gin.Context) {
 	singleton.DB.Find(&ar)
 	standardRules := make([]model.AlertRule, 0, len(ar))
 	expirationRules := make([]model.AlertRule, 0)
+	subscriptionExpirationRules := make([]model.AlertRule, 0)
 	for _, rule := range ar {
-		if rule.IsExpirationRule() {
+		if rule.IsSubscriptionExpirationRule() {
+			if singleton.Conf.EnableSubscription {
+				subscriptionExpirationRules = append(subscriptionExpirationRules, rule)
+			}
+		} else if rule.IsExpirationRule() {
 			expirationRules = append(expirationRules, rule)
 		} else {
 			standardRules = append(standardRules, rule)
 		}
 	}
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/notification", mygin.CommonEnvironment(c, gin.H{
-		"Title":           singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Notification"}),
-		"Notifications":   nf,
-		"AlertRules":      standardRules,
-		"ExpirationRules": expirationRules,
+		"Title":                       singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Notification"}),
+		"Notifications":               nf,
+		"AlertRules":                  standardRules,
+		"ExpirationRules":             expirationRules,
+		"SubscriptionExpirationRules": subscriptionExpirationRules,
 	}))
 }
 
@@ -131,12 +247,15 @@ func (mp *memberPage) setting(c *gin.Context) {
 		}
 		geoIPUpdatedAt = geoip.UpdatedAt().In(loc).Format("2006-01-02 15:04:05")
 	}
+	_, currencyRatesUpdatedAt, _ := singleton.CurrencyRateSnapshot()
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/setting", mygin.CommonEnvironment(c, gin.H{
-		"Title":           singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Settings"}),
-		"Languages":       model.Languages,
-		"DashboardThemes": model.DashboardThemes,
-		"GeoIPDownloaded": geoip.Downloaded(),
-		"GeoIPUpdatedAt":  geoIPUpdatedAt,
+		"Title":                  singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Settings"}),
+		"Languages":              model.Languages,
+		"DashboardThemes":        model.DashboardThemes,
+		"GeoIPDownloaded":        geoip.Downloaded(),
+		"GeoIPUpdatedAt":         geoIPUpdatedAt,
+		"Currencies":             model.SortedCurrencies(),
+		"CurrencyRatesUpdatedAt": subscriptionDateTime(currencyRatesUpdatedAt),
 	}))
 }
 

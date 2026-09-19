@@ -80,26 +80,34 @@ func (r *AlertRule) IsExpirationRule() bool {
 	return len(r.Rules) == 1 && r.Rules[0].Type == RuleTypeExpiration
 }
 
+func (r *AlertRule) IsSubscriptionExpirationRule() bool {
+	return len(r.Rules) == 1 && r.Rules[0].Type == RuleTypeSubscriptionExpiration
+}
+
+func (r *AlertRule) IsAnyExpirationRule() bool {
+	return r.IsExpirationRule() || r.IsSubscriptionExpirationRule()
+}
+
 func (r *AlertRule) ExpirationAdvanceDays() int {
-	if !r.IsExpirationRule() {
+	if !r.IsAnyExpirationRule() {
 		return 0
 	}
 	return r.Rules[0].AdvanceDays
 }
 
 func (r *AlertRule) ExpirationDailyReminder() bool {
-	return r.IsExpirationRule() && r.Rules[0].DailyReminder
+	return r.IsAnyExpirationRule() && r.Rules[0].DailyReminder
 }
 
 func (r *AlertRule) ExpirationCover() uint64 {
-	if !r.IsExpirationRule() {
+	if !r.IsAnyExpirationRule() {
 		return RuleCoverAll
 	}
 	return r.Rules[0].Cover
 }
 
 func (r *AlertRule) ExpirationServerIDs() string {
-	if !r.IsExpirationRule() {
+	if !r.IsAnyExpirationRule() {
 		return "[]"
 	}
 	ids := make([]uint64, 0, len(r.Rules[0].Ignore))

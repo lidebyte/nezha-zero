@@ -1180,3 +1180,120 @@ other = "Los siguientes servidores están a punto de vencer"
 [ExpirationReminderItem]
 one = "- {{.Name}} ({{.IP}}) vencerá el {{.Date}}, queda {{.Days}} día"
 other = "- {{.Name}} ({{.IP}}) vencerá el {{.Date}}, quedan {{.Days}} días"
+[Subscription]
+other = "Suscripciones"
+
+[SubscriptionManagement]
+other = "Gestión de suscripciones"
+
+[EnableSubscriptionManagement]
+other = "Activar gestión de suscripciones"
+
+[AddSubscription]
+other = "Añadir suscripción"
+
+[DeleteSubscription]
+other = "Eliminar suscripción"
+
+[ConfirmDeleteSubscription]
+other = "¿Eliminar esta suscripción?"
+
+[SubscriptionStartDate]
+other = "Fecha de inicio"
+
+[SubscriptionEndDate]
+other = "Fecha de fin"
+
+[RemainingDays]
+other = "Días restantes"
+
+[SubscriptionGroup]
+other = "Grupo"
+
+[PriceUnit]
+other = "Ciclo de facturación"
+
+[PriceUnitPlaceholder]
+other = "Por ejemplo: mes, año, pago único"
+
+[BillingCycleTwoYears]
+other = "Dos años"
+
+[BillingCycleThreeYears]
+other = "Tres años"
+
+[BillingCycleFiveYears]
+other = "Cinco años"
+
+[Currency]
+other = "Moneda de facturación"
+
+[ConvertedPrice]
+other = "Precio convertido"
+
+[EnableCurrencyConversion]
+other = "Activar conversión de moneda"
+
+[CurrencyProvider]
+other = "Proveedor de tipos de cambio"
+
+[CurrencyAPIKey]
+other = "Clave API de tipos de cambio"
+
+[BaseCurrency]
+other = "Moneda base"
+
+[RefreshExchangeRates]
+other = "Actualizar tipos de cambio"
+
+[ExchangeRatesLastUpdated]
+other = "Última actualización de tipos"
+
+[ExchangeRatesNeverUpdated]
+other = "Nunca actualizado"
+
+[BatchEditSubscriptionGroup]
+other = "Editar grupos de suscripciones"
+
+[InputSubscriptionGroupName]
+other = "Introduzca el nombre del grupo"
+
+[NoSubscriptionSelected]
+other = "No se seleccionó ninguna suscripción manual"
+
+[Link]
+other = "Enlace"
+
+[OpenLink]
+other = "Abrir"
+
+[SubscriptionExpirationAlert]
+other = "Alerta de vencimiento de suscripción"
+
+[SpecificSubscriptions]
+other = "Suscripciones específicas"
+
+[AllSubscriptionsExceptSelected]
+other = "Incluir todas excepto las seleccionadas"
+
+[OnlySelectedSubscriptions]
+other = "Incluir solo las seleccionadas"
+
+[EnterSubscriptionIdAndNameToSearch]
+other = "Buscar por ID o nombre de suscripción"
+
+[DeleteSubscriptionReminderRule]
+other = "Eliminar regla de vencimiento"
+
+[ConfirmDeleteSubscriptionReminderRule]
+other = "¿Eliminar esta regla de vencimiento?"
+
+[SubscriptionExpirationReminderTitle]
+other = "[Recordatorio de vencimiento de suscripción]"
+
+[SubscriptionExpirationReminderIntro]
+other = "Las siguientes suscripciones manuales están por vencer:"
+
+[SubscriptionExpirationReminderItem]
+one = "{{.Name}} (ID {{.ID}}, {{.Group}}) vence el {{.Date}}, queda {{.Days}} día"
+other = "{{.Name}} (ID {{.ID}}, {{.Group}}) vence el {{.Date}}, quedan {{.Days}} días"

@@ -2,12 +2,18 @@ package singleton
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"gorm.io/gorm"
 
 	"github.com/railzen/nezha-zero/model"
 )
@@ -20,6 +26,11 @@ func loadExpirationReminders() {
 }
 
 func CheckExpirationReminders() {
+	checkServerExpirationReminders()
+	checkSubscriptionExpirationReminders()
+}
+
+func checkServerExpirationReminders() {
 	var rules []model.AlertRule
 	if err := DB.Order("id").Find(&rules).Error; err != nil {
 		log.Printf("NEZHA>> load expiration reminder rules failed: %v", err)
@@ -73,7 +84,7 @@ func CheckExpirationReminders() {
 		config := rule.Rules[0]
 		var due []serverExpiration
 		for _, item := range expirations {
-			if !expirationReminderCoversServer(config.Cover, config.Ignore, item.id) {
+			if !expirationReminderCoversID(config.Cover, config.Ignore, item.id) {
 				continue
 			}
 			days := calendarDaysBetween(now.In(item.expiration.Location()), item.expiration)
@@ -107,7 +118,64 @@ func CheckExpirationReminders() {
 	}
 }
 
-func expirationReminderCoversServer(cover uint64, selected map[uint64]bool, id uint64) bool {
+func checkSubscriptionExpirationReminders() {
+	if !Conf.EnableSubscription {
+		return
+	}
+	var rules []model.AlertRule
+	if err := DB.Order("id").Find(&rules).Error; err != nil {
+		log.Printf("NEZHA>> load subscription reminder rules failed: %v", err)
+		return
+	}
+	var subscriptions []model.Subscription
+	if err := DB.Order("id").Find(&subscriptions).Error; err != nil {
+		log.Printf("NEZHA>> load subscriptions failed: %v", err)
+		return
+	}
+	now := time.Now()
+	for _, rule := range rules {
+		if !rule.Enabled() || !rule.IsSubscriptionExpirationRule() {
+			continue
+		}
+		config := rule.Rules[0]
+		var due []model.Subscription
+		for _, subscription := range subscriptions {
+			if subscription.EndDate.IsZero() || !expirationReminderCoversID(config.Cover, config.Ignore, subscription.ID) {
+				continue
+			}
+			days := calendarDaysBetween(now.In(subscription.EndDate.Location()), subscription.EndDate)
+			if days == config.AdvanceDays || (config.DailyReminder && days >= 0 && days < config.AdvanceDays) {
+				due = append(due, subscription)
+			}
+		}
+		if len(due) == 0 {
+			continue
+		}
+		sort.Slice(due, func(i, j int) bool { return due[i].ID < due[j].ID })
+		var message strings.Builder
+		message.WriteString(Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "SubscriptionExpirationReminderTitle"}))
+		message.WriteByte(' ')
+		message.WriteString(Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "SubscriptionExpirationReminderIntro"}))
+		for _, item := range due {
+			days := calendarDaysBetween(now.In(item.EndDate.Location()), item.EndDate)
+			message.WriteByte('\n')
+			message.WriteString(Localizer.MustLocalize(&i18n.LocalizeConfig{
+				MessageID:   "SubscriptionExpirationReminderItem",
+				PluralCount: days,
+				TemplateData: map[string]interface{}{
+					"ID":    item.ID,
+					"Name":  item.Name,
+					"Group": item.Group,
+					"Date":  item.EndDate.Format("2006-01-02"),
+					"Days":  days,
+				},
+			}))
+		}
+		SendNotification(rule.NotificationTag, message.String(), nil)
+	}
+}
+
+func expirationReminderCoversID(cover uint64, selected map[uint64]bool, id uint64) bool {
 	if cover == model.RuleCoverIgnoreAll {
 		return selected[id]
 	}
@@ -122,66 +190,145 @@ func calendarDaysBetween(from, to time.Time) int {
 }
 
 func parsePublicNoteExpiration(publicNote string, now time.Time) (time.Time, bool) {
-	var note struct {
-		BillingDataMod struct {
-			EndDate     string          `json:"endDate"`
-			Cycle       string          `json:"cycle"`
-			AutoRenewal json.RawMessage `json:"autoRenewal"`
-		} `json:"billingDataMod"`
-	}
-	if json.Unmarshal([]byte(publicNote), &note) != nil {
-		return time.Time{}, false
-	}
-	endDate := strings.TrimSpace(note.BillingDataMod.EndDate)
-	if endDate == "" || strings.Contains(endDate, "0000-00-00") {
-		return time.Time{}, false
-	}
-	expiration, ok := parsePublicNoteDate(endDate)
-	if !ok || !publicNoteAutoRenewal(note.BillingDataMod.AutoRenewal) {
-		return expiration, ok
-	}
-	months := publicNoteCycleMonths(note.BillingDataMod.Cycle)
-	if months == 0 {
-		return time.Time{}, false
-	}
-	for i := 0; !expiration.After(now.In(expiration.Location())) && i < 2400; i++ {
-		expiration = expiration.AddDate(0, months, 0)
-	}
-	return expiration, expiration.After(now.In(expiration.Location()))
+	item := model.ParseServerSubscription(&model.Server{PublicNote: publicNote}, now)
+	return item.EndDate, !item.EndDate.IsZero()
 }
 
-func parsePublicNoteDate(value string) (time.Time, bool) {
-	value = strings.TrimSpace(value)
-	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05Z07:00"} {
-		if parsed, err := time.Parse(layout, value); err == nil {
-			return parsed, true
+const maxCurrencyResponseSize = 1 << 20
+
+var currencyHTTPClient = &http.Client{Timeout: 15 * time.Second}
+
+type currencyAPIResponse struct {
+	Success *bool              `json:"success"`
+	Base    string             `json:"base"`
+	Rates   map[string]float64 `json:"rates"`
+	Message string             `json:"message"`
+	Error   struct {
+		Code int    `json:"code"`
+		Type string `json:"type"`
+		Info string `json:"info"`
+	} `json:"error"`
+}
+
+func loadCurrencyRates() {
+	if _, err := Cron.AddFunc("0 0 2 * * *", func() {
+		if err := RefreshCurrencyRates(); err != nil && Conf.EnableSubscription && Conf.EnableCurrencyConversion {
+			log.Printf("NEZHA>> refresh currency rates failed: %v", err)
 		}
+	}); err != nil {
+		log.Printf("NEZHA>> register currency refresh failed: %v", err)
 	}
-	location := time.FixedZone("UTC+8", 8*60*60)
-	for _, layout := range []string{"2006-01-02", "2006-01-02T15:04:05", "2006-01-02 15:04:05"} {
-		if parsed, err := time.ParseInLocation(layout, value, location); err == nil {
-			return parsed, true
+}
+
+func RefreshCurrencyRates() error {
+	if !Conf.EnableSubscription || !Conf.EnableCurrencyConversion {
+		return errors.New("currency conversion is disabled")
+	}
+	apiKey := strings.TrimSpace(Conf.CurrencyAPIKey)
+	if apiKey == "" {
+		return errors.New("currency API key is empty")
+	}
+
+	params := url.Values{}
+	params.Set("base", "EUR")
+	params.Set("symbols", strings.Join(model.CurrencyCodes(), ","))
+	var endpoint string
+	var req *http.Request
+	var err error
+	switch Conf.CurrencyProvider {
+	case "apilayer":
+		endpoint = "https://api.apilayer.com/fixer/latest?" + params.Encode()
+		req, err = http.NewRequest(http.MethodGet, endpoint, nil)
+		if err == nil {
+			req.Header.Set("apikey", apiKey)
 		}
-	}
-	return time.Time{}, false
-}
-
-func publicNoteAutoRenewal(raw json.RawMessage) bool {
-	value := strings.Trim(strings.TrimSpace(string(raw)), `"`)
-	return value == "1" || strings.EqualFold(value, "true")
-}
-
-func publicNoteCycleMonths(cycle string) int {
-	switch strings.ToLower(strings.TrimSpace(cycle)) {
-	case "月", "mo", "month", "monthly", "m":
-		return 1
-	case "季", "quarterly", "q":
-		return 3
-	case "半", "半年", "half", "semi-annually", "h":
-		return 6
-	case "年", "yr", "year", "annually", "y":
-		return 12
+	case "fixer":
+		params.Set("access_key", apiKey)
+		endpoint = "https://data.fixer.io/api/latest?" + params.Encode()
+		req, err = http.NewRequest(http.MethodGet, endpoint, nil)
 	default:
-		return 0
+		return errors.New("unsupported currency provider")
 	}
+	if err != nil {
+		return err
+	}
+
+	resp, err := currencyHTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("request currency provider: %w", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxCurrencyResponseSize+1))
+	if err != nil {
+		return fmt.Errorf("read currency provider response: %w", err)
+	}
+	if len(body) > maxCurrencyResponseSize {
+		return errors.New("currency provider response is too large")
+	}
+	var payload currencyAPIResponse
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return fmt.Errorf("decode currency provider response: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 || (payload.Success != nil && !*payload.Success) {
+		message := strings.TrimSpace(payload.Error.Info)
+		if message == "" {
+			message = strings.TrimSpace(payload.Message)
+		}
+		if message == "" {
+			message = resp.Status
+		}
+		return fmt.Errorf("currency provider rejected the request: %s", message)
+	}
+	if len(payload.Rates) == 0 {
+		return errors.New("currency provider returned no rates")
+	}
+	base := strings.ToUpper(strings.TrimSpace(payload.Base))
+	if base == "" {
+		base = "EUR"
+	}
+	payload.Rates[base] = 1
+	now := time.Now()
+	rates := make(map[string]float64, len(payload.Rates))
+	for code, rate := range payload.Rates {
+		code = strings.ToUpper(strings.TrimSpace(code))
+		if !model.IsSupportedCurrency(code) || rate <= 0 {
+			continue
+		}
+		rates[code] = rate
+	}
+	if len(rates) < 2 {
+		return errors.New("currency provider returned insufficient supported rates")
+	}
+	stored := make([]model.CurrencyRate, 0, len(rates))
+	for code, rate := range rates {
+		stored = append(stored, model.CurrencyRate{
+			BaseCode:  base,
+			Code:      code,
+			Rate:      rate,
+			Provider:  Conf.CurrencyProvider,
+			FetchedAt: now,
+		})
+	}
+	return DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Unscoped().Where("1 = 1").Delete(&model.CurrencyRate{}).Error; err != nil {
+			return err
+		}
+		return tx.Create(&stored).Error
+	})
+}
+
+func CurrencyRateSnapshot() (map[string]float64, time.Time, error) {
+	var stored []model.CurrencyRate
+	if err := DB.Order("code").Find(&stored).Error; err != nil {
+		return nil, time.Time{}, err
+	}
+	rates := make(map[string]float64, len(stored))
+	var fetchedAt time.Time
+	for _, item := range stored {
+		rates[item.Code] = item.Rate
+		if item.FetchedAt.After(fetchedAt) {
+			fetchedAt = item.FetchedAt
+		}
+	}
+	return rates, fetchedAt, nil
 }

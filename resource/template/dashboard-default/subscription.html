@@ -1,0 +1,198 @@
+{{define "dashboard-default/subscription"}}
+{{template "common/header" .}}
+{{template "common/menu" .}}
+<style>
+.subscription-select-column {
+    width: 1%;
+    white-space: nowrap;
+}
+</style>
+<div class="nb-container">
+    <div class="ui container">
+        <div class="ui grid">
+            {{if .Conf.EnableCurrencyConversion}}
+            <div class="left aligned four wide column" style="align-self:center;color:rgba(0,0,0,.55)">
+                {{tr "BaseCurrency"}}: {{.Conf.BaseCurrency}}<br>
+                <small>{{tr "ExchangeRatesLastUpdated"}}: {{if .RatesUpdatedAt}}{{.RatesUpdatedAt}}{{else}}{{tr "ExchangeRatesNeverUpdated"}}{{end}}</small>
+            </div>
+            {{end}}
+            <div class="right floated right aligned twelve wide column">
+                <button class="ui right labeled nezha-primary-btn icon button" onclick="batchEditSubscriptionGroup()">
+                    <i class="edit icon"></i> {{tr "BatchEditSubscriptionGroup"}}
+                </button>
+                <button class="ui right labeled nezha-primary-btn icon button" onclick="addOrEditSubscription()">
+                    <i class="add icon"></i> {{tr "AddSubscription"}}
+                </button>
+            </div>
+        </div>
+        <table class="ui basic table">
+                <thead>
+                    <tr>
+                        <th class="subscription-select-column"><button onclick="checkAllSubscriptions()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
+                        <th>ID</th>
+                        <th>{{tr "Name"}}</th>
+                        <th>{{tr "SubscriptionGroup"}}</th>
+                        <th>{{tr "SubscriptionStartDate"}}</th>
+                        <th>{{tr "SubscriptionEndDate"}}</th>
+                        <th>{{tr "RemainingDays"}}</th>
+                        <th>{{tr "Price"}}</th>
+                        <th>{{tr "PriceUnit"}}</th>
+                        <th>{{tr "Currency"}}</th>
+                        <th>{{tr "ConvertedPrice"}}</th>
+                        <th>{{tr "Link"}}</th>
+                        <th>{{tr "Note"}}</th>
+                        <th>{{tr "Administration"}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range $subscription := .Subscriptions}}
+                    <tr>
+                        <td class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
+                        <td>{{if $subscription.Manual}}M{{else}}S{{end}}-{{$subscription.ID}}</td>
+                        <td>{{$subscription.Name}}</td>
+                        <td>{{$subscription.Group}}</td>
+                        <td>{{$subscription.StartDate}}</td>
+                        <td>{{$subscription.EndDate}}</td>
+                        <td>{{if $subscription.HasEndDate}}{{$subscription.RemainingDays}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.Price}}{{$subscription.Price}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.PriceUnit}}{{$subscription.PriceUnit}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.Link}}<a class="ui icon mini button" href="{{$subscription.Link}}" target="_blank" rel="noopener noreferrer" title="{{tr "OpenLink"}}"><i class="linkify icon"></i></a>{{else}}-{{end}}</td>
+                        <td>{{if $subscription.Note}}<span title="{{$subscription.Note}}"><i class="sticky note icon"></i></span>{{else}}-{{end}}</td>
+                        <td>
+                            {{if $subscription.Manual}}
+                            <div class="ui mini icon buttons">
+                                <button class="ui button" onclick="addOrEditSubscription({{$subscription.EditData}})"><i class="edit icon"></i></button>
+                                <button class="ui button" onclick="showConfirm('{{tr "DeleteSubscription"}}','{{tr "ConfirmDeleteSubscription"}}',deleteRequest,'/api/subscription/'+{{$subscription.ID}})"><i class="trash alternate outline icon"></i></button>
+                            </div>
+                            {{else}}-{{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="ui small subscription modal transition hidden">
+    <div class="header">{{tr "AddSubscription"}}</div>
+    <div class="content">
+        <form id="subscriptionForm" class="ui form">
+            <input type="hidden" name="ID">
+            <div class="field"><label>{{tr "Name"}}</label><input type="text" name="Name" required></div>
+            <div class="two fields">
+                <div class="field pne-date-row">
+                    <label>{{tr "SubscriptionStartDate"}}</label>
+                    {{template "component/pne-wheel" "StartDate"}}
+                    <input type="hidden" name="StartDate">
+                </div>
+                <div class="field pne-date-row">
+                    <label>{{tr "SubscriptionEndDate"}}</label>
+                    {{template "component/pne-wheel" "EndDate"}}
+                    <input type="hidden" name="EndDate">
+                </div>
+            </div>
+            <div class="two fields">
+                <div class="field"><label>{{tr "Price"}}</label><input type="text" name="Price"></div>
+                <div class="field">
+                    <label>{{tr "PriceUnit"}}</label>
+                    <select name="PriceUnit" class="ui fluid dropdown">
+                        <option value="月">{{tr "PNECycleMonthly"}}</option>
+                        <option value="季度">{{tr "PNECycleQuarterly"}}</option>
+                        <option value="年">{{tr "PNECycleYearly"}}</option>
+                        <option value="两年">{{tr "BillingCycleTwoYears"}}</option>
+                        <option value="三年">{{tr "BillingCycleThreeYears"}}</option>
+                        <option value="五年">{{tr "BillingCycleFiveYears"}}</option>
+                        <option value="永续">{{tr "PNELifetime"}}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="two fields">
+                <div class="field">
+                    <label>{{tr "Currency"}}</label>
+                    <select name="Currency" class="ui fluid dropdown">
+                        {{range .Currencies}}<option value="{{.Code}}">{{.Code}} - {{.Name}} ({{.Symbol}})</option>{{end}}
+                    </select>
+                </div>
+                <div class="field"><label>{{tr "SubscriptionGroup"}}</label><input type="text" name="Group" value="Default"></div>
+            </div>
+            <div class="field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
+            <div class="field"><label>{{tr "Note"}}</label><textarea name="Note"></textarea></div>
+        </form>
+    </div>
+    <div class="actions">
+        <div class="ui negative button">{{tr "Cancel"}}</div>
+        <button class="ui positive nezha-primary-btn right labeled icon button">{{tr "Confirm"}}<i class="checkmark icon"></i></button>
+    </div>
+</div>
+<link rel="stylesheet" href="/static/public-note-editor.css?v20260616a">
+{{template "common/footer" .}}
+<script src="/static/public-note-editor.js?v20260919a"></script>
+<script>
+function subscriptionFormData() {
+    const form = $('#subscriptionForm');
+    return {
+        ID: parseInt(form.find('[name=ID]').val(), 10) || 0,
+        Name: form.find('[name=Name]').val().trim(),
+        StartDate: form.find('[name=StartDate]').val(),
+        EndDate: form.find('[name=EndDate]').val(),
+        Price: form.find('[name=Price]').val().trim(),
+        PriceUnit: form.find('[name=PriceUnit]').val().trim(),
+        Currency: form.find('[name=Currency]').val(),
+        Group: form.find('[name=Group]').val().trim(),
+        Link: form.find('[name=Link]').val().trim(),
+        Note: form.find('[name=Note]').val().trim()
+    };
+}
+function addOrEditSubscription(subscription) {
+    const form = $('#subscriptionForm');
+    const current = subscription || {};
+    form.find('[name=ID]').val(current.ID || 0);
+    form.find('[name=Name]').val(current.Name || '');
+    form.find('[name=StartDate]').val(current.StartDate || '');
+    form.find('.pne-date-manual[data-target=StartDate]').val(current.StartDate || '');
+    form.find('[name=EndDate]').val(current.EndDate || '');
+    form.find('.pne-date-manual[data-target=EndDate]').val(current.EndDate || '');
+    form.find('[name=Price]').val(current.Price || '');
+    form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '月');
+    form.find('[name=Currency]').dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
+    form.find('[name=Group]').val(current.Group || 'Default');
+    form.find('[name=Link]').val(current.Link || '');
+    form.find('[name=Note]').val(current.Note || '');
+    NezhaDateWheel.init(form.closest('.subscription.modal'));
+    showFormModal('.subscription.modal', '#subscriptionForm', '/api/subscription', subscriptionFormData);
+}
+const subscriptionCheckboxes = document.querySelectorAll('input.nezha-subscriptions[type=checkbox]');
+function checkAllSubscriptions() {
+    const shouldCheck = Array.from(subscriptionCheckboxes).some(function (checkbox) { return !checkbox.checked; });
+    subscriptionCheckboxes.forEach(function (checkbox) { checkbox.checked = shouldCheck; });
+}
+function batchEditSubscriptionGroup() {
+    const group = prompt('{{tr "InputSubscriptionGroupName"}}');
+    if (group === null) return;
+    const subscriptions = [];
+    subscriptionCheckboxes.forEach(function (checkbox) {
+        if (checkbox.checked) subscriptions.push(parseInt(checkbox.value, 10));
+    });
+    if (subscriptions.length === 0) {
+        $.suiAlert({
+            title: '{{tr "NoSubscriptionSelected"}}',
+            description: '',
+            type: 'warning',
+            time: '2',
+            position: 'top-center'
+        });
+        return;
+    }
+    $.post('/api/batch-update-subscription-group', JSON.stringify({Subscriptions: subscriptions, Group: group}))
+        .then(function (resp) {
+            if (resp.code === 200) window.location.reload();
+            else $.suiAlert({title: '', description: resp.message, type: 'error', time: '3', position: 'top-center'});
+        })
+        .catch(function (err) {
+            $.suiAlert({title: '', description: err, type: 'error', time: '3', position: 'top-center'});
+        });
+}
+</script>
+{{end}}

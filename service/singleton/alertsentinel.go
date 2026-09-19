@@ -70,7 +70,7 @@ func AlertSentinelStart() {
 	}
 	Alerts = Alerts[:0]
 	for _, alert := range loadedAlerts {
-		if alert.IsExpirationRule() {
+		if alert.IsAnyExpirationRule() {
 			continue
 		}
 		Alerts = append(Alerts, alert)
@@ -112,7 +112,7 @@ func OnRefreshOrAddAlert(alert model.AlertRule) {
 	var isEdit bool
 	for i := 0; i < len(Alerts); i++ {
 		if Alerts[i].ID == alert.ID {
-			if alert.IsExpirationRule() {
+			if alert.IsAnyExpirationRule() {
 				Alerts = append(Alerts[:i], Alerts[i+1:]...)
 			} else {
 				Alerts[i] = &alert
@@ -121,7 +121,7 @@ func OnRefreshOrAddAlert(alert model.AlertRule) {
 			break
 		}
 	}
-	if alert.IsExpirationRule() {
+	if alert.IsAnyExpirationRule() {
 		return
 	}
 	if !isEdit {

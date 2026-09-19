@@ -120,6 +120,11 @@ type Config struct {
 	DisableCommandExecuteInInstall  bool // 界面安装脚本默认附带 --disable-command-execute
 	CompatAPIDisable                bool // 兼容API开关
 	UseTemplateHandleNoRoute        bool // 用模板处理无路由情况
+	EnableSubscription              bool // 启用订阅管理
+	EnableCurrencyConversion        bool // 启用订阅货币换算
+	CurrencyProvider                string
+	CurrencyAPIKey                  string
+	BaseCurrency                    string
 
 	// UseExternalGeoIP 为 true 时使用 data 目录下的外部 GeoLite2 库解析国家/地区；否则使用内置库。
 	UseExternalGeoIP bool
@@ -248,6 +253,12 @@ func (c *Config) Read(path string) error {
 	}
 	if c.AvgPingCount == 0 {
 		c.AvgPingCount = 2
+	}
+	if c.CurrencyProvider == "" {
+		c.CurrencyProvider = "fixer"
+	}
+	if c.BaseCurrency == "" || !IsSupportedCurrency(c.BaseCurrency) {
+		c.BaseCurrency = "CNY"
 	}
 	if c.Oauth2.OidcScopes == "" {
 		c.Oauth2.OidcScopes = "openid,profile,email"

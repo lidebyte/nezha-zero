@@ -42,6 +42,7 @@ func LoadSingleton() {
 	loadServers()       // 加载服务器列表
 	loadCronTasks()     // 加载定时任务
 	loadExpirationReminders()
+	loadCurrencyRates()
 	loadAPI()
 	initNAT()
 	initDDNS()
@@ -74,7 +75,7 @@ func InitDBFromPath(path string) {
 		model.Notification{}, model.AlertRule{}, model.Monitor{},
 		model.MonitorHistory{}, model.Cron{}, model.Transfer{},
 		model.ApiToken{}, model.NAT{}, model.DDNSProfile{},
-		model.AuditLog{})
+		model.AuditLog{}, model.Subscription{}, model.CurrencyRate{})
 	if err != nil {
 		panic(err)
 	}

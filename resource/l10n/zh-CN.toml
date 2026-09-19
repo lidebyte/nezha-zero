@@ -1188,3 +1188,120 @@ other = "以下服务器即将到期"
 
 [ExpirationReminderItem]
 other = "- {{.Name}}({{.IP}}) 将于 {{.Date}} 到期，剩余 {{.Days}} 天"
+[Subscription]
+other = "订阅"
+
+[SubscriptionManagement]
+other = "订阅管理"
+
+[EnableSubscriptionManagement]
+other = "启用订阅管理"
+
+[AddSubscription]
+other = "新增订阅"
+
+[DeleteSubscription]
+other = "删除订阅"
+
+[ConfirmDeleteSubscription]
+other = "确认删除此订阅？"
+
+[SubscriptionStartDate]
+other = "订阅开始时间"
+
+[SubscriptionEndDate]
+other = "订阅结束时间"
+
+[RemainingDays]
+other = "剩余天数"
+
+[SubscriptionGroup]
+other = "分组"
+
+[PriceUnit]
+other = "帐单周期"
+
+[PriceUnitPlaceholder]
+other = "例如：月、年、一次性"
+
+[BillingCycleTwoYears]
+other = "两年"
+
+[BillingCycleThreeYears]
+other = "三年"
+
+[BillingCycleFiveYears]
+other = "五年"
+
+[Currency]
+other = "帐单货币"
+
+[ConvertedPrice]
+other = "换算价格"
+
+[EnableCurrencyConversion]
+other = "启用货币换算"
+
+[CurrencyProvider]
+other = "汇率服务商"
+
+[CurrencyAPIKey]
+other = "汇率 API Key"
+
+[BaseCurrency]
+other = "基准货币"
+
+[RefreshExchangeRates]
+other = "刷新汇率"
+
+[ExchangeRatesLastUpdated]
+other = "汇率最后更新时间"
+
+[ExchangeRatesNeverUpdated]
+other = "尚未更新"
+
+[BatchEditSubscriptionGroup]
+other = "批量修改订阅分组"
+
+[InputSubscriptionGroupName]
+other = "请输入订阅分组名称"
+
+[NoSubscriptionSelected]
+other = "未选择手工订阅"
+
+[Link]
+other = "链接"
+
+[OpenLink]
+other = "打开"
+
+[SubscriptionExpirationAlert]
+other = "订阅到期告警"
+
+[SpecificSubscriptions]
+other = "指定订阅"
+
+[AllSubscriptionsExceptSelected]
+other = "覆盖全部订阅，仅排除指定订阅"
+
+[OnlySelectedSubscriptions]
+other = "忽略全部订阅，仅覆盖指定订阅"
+
+[EnterSubscriptionIdAndNameToSearch]
+other = "输入订阅 ID 或名称搜索"
+
+[DeleteSubscriptionReminderRule]
+other = "删除订阅到期提醒规则"
+
+[ConfirmDeleteSubscriptionReminderRule]
+other = "确认删除此订阅到期提醒规则？"
+
+[SubscriptionExpirationReminderTitle]
+other = "[订阅到期提醒]"
+
+[SubscriptionExpirationReminderIntro]
+other = "以下手动订阅即将到期："
+
+[SubscriptionExpirationReminderItem]
+one = "{{.Name}}（ID {{.ID}}，{{.Group}}）将于 {{.Date}} 到期，剩余 {{.Days}} 天"
+other = "{{.Name}}（ID {{.ID}}，{{.Group}}）将于 {{.Date}} 到期，剩余 {{.Days}} 天"

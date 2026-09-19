@@ -118,6 +118,25 @@
                     </td>
                 </tr>
                 {{end}}
+                {{range $rule := .SubscriptionExpirationRules}}
+                <tr>
+                    <td>{{$rule.ID}}</td>
+                    <td>{{$rule.Name}}</td>
+                    <td>{{tr "SubscriptionExpirationAlert"}}</td>
+                    <td>{{$rule.NotificationTag}}</td>
+                    <td>{{if $rule.ExpirationDailyReminder}}{{tr "ExpirationReminderDaily"}}{{else}}{{tr "ExpirationReminderExactDay"}}{{end}}</td>
+                    <td>{{tr "AdvanceReminderDays"}}: {{$rule.ExpirationAdvanceDays}}; {{if eq $rule.ExpirationCover 1}}{{tr "IgnoreAll"}}{{else}}{{tr "CoverAll"}}{{end}}; {{$rule.ExpirationServerIDs}}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>{{$rule.Enable}}</td>
+                    <td>
+                        <div class="ui mini icon buttons">
+                            <button class="ui button" onclick="addOrEditAlertRule({{$rule}}, 2)"><i class="edit icon"></i></button>
+                            <button class="ui button" onclick="showConfirm('{{tr "DeleteSubscriptionReminderRule"}}','{{tr "ConfirmDeleteSubscriptionReminderRule"}}',deleteRequest,'/api/alert-rule/'+{{$rule.ID}})"><i class="trash alternate outline icon"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
             </tbody>
         </table>
     </div>

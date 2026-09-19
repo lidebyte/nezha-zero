@@ -14,6 +14,7 @@
 
         {{if .IsAdminPage}}
             <a class='item wide-link{{if eq .MatchedPath "/server"}} active{{end}}' href="/server"><i class="server icon"></i> {{tr "Server"}}</a>
+            {{if .Conf.EnableSubscription}}<a class='item wide-link{{if eq .MatchedPath "/subscription"}} active{{end}}' href="/subscription"><i class="credit card outline icon"></i> {{tr "Subscription"}}</a>{{end}}
             <a class='item wide-link{{if eq .MatchedPath "/monitor"}} active{{end}}' href="/monitor"><i class="rss icon"></i> {{tr "Services"}}</a>
             <a class='item wide-link{{if eq .MatchedPath "/cron"}} active{{end}}' href="/cron"><i class="clock icon"></i> {{tr "Task"}}</a>
             <a class='item wide-link{{if eq .MatchedPath "/notification"}} active{{end}}' href="/notification"><i class="bell icon"></i> {{tr "Notification"}}</a>
@@ -30,6 +31,7 @@
         <div class="left menu" id="menu-items">
             {{if .IsAdminPage}}
                 <a class='item{{if eq .MatchedPath "/server"}} active{{end}}' href="/server"><i class="server icon"></i> {{tr "Server"}}</a>
+                {{if .Conf.EnableSubscription}}<a class='item{{if eq .MatchedPath "/subscription"}} active{{end}}' href="/subscription"><i class="credit card outline icon"></i> {{tr "Subscription"}}</a>{{end}}
                 <a class='item{{if eq .MatchedPath "/monitor"}} active{{end}}' href="/monitor"><i class="rss icon"></i> {{tr "Services"}}</a>
                 <a class='item{{if eq .MatchedPath "/cron"}} active{{end}}' href="/cron"><i class="clock icon"></i> {{tr "Task"}}</a>
                 <a class='item{{if eq .MatchedPath "/notification"}} active{{end}}' href="/notification"><i class="bell icon"></i> {{tr "Notification"}}</a>

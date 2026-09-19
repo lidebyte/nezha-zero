@@ -14,7 +14,10 @@ const (
 	RuleCoverIgnoreAll
 )
 
-const RuleTypeExpiration = "expiration"
+const (
+	RuleTypeExpiration             = "expiration"
+	RuleTypeSubscriptionExpiration = "subscription_expiration"
+)
 
 type NResult struct {
 	N uint64

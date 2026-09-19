@@ -1189,3 +1189,120 @@ other = "The following servers are about to expire"
 [ExpirationReminderItem]
 one = "- {{.Name}} ({{.IP}}) will expire on {{.Date}}, {{.Days}} day remaining"
 other = "- {{.Name}} ({{.IP}}) will expire on {{.Date}}, {{.Days}} days remaining"
+[Subscription]
+other = "Subscriptions"
+
+[SubscriptionManagement]
+other = "Subscription Management"
+
+[EnableSubscriptionManagement]
+other = "Enable subscription management"
+
+[AddSubscription]
+other = "Add Subscription"
+
+[DeleteSubscription]
+other = "Delete Subscription"
+
+[ConfirmDeleteSubscription]
+other = "Delete this subscription?"
+
+[SubscriptionStartDate]
+other = "Start Date"
+
+[SubscriptionEndDate]
+other = "End Date"
+
+[RemainingDays]
+other = "Days Remaining"
+
+[SubscriptionGroup]
+other = "Group"
+
+[PriceUnit]
+other = "Billing Cycle"
+
+[PriceUnitPlaceholder]
+other = "For example: month, year, one-time"
+
+[BillingCycleTwoYears]
+other = "Two Years"
+
+[BillingCycleThreeYears]
+other = "Three Years"
+
+[BillingCycleFiveYears]
+other = "Five Years"
+
+[Currency]
+other = "Billing Currency"
+
+[ConvertedPrice]
+other = "Converted Price"
+
+[EnableCurrencyConversion]
+other = "Enable currency conversion"
+
+[CurrencyProvider]
+other = "Exchange Rate Provider"
+
+[CurrencyAPIKey]
+other = "Exchange Rate API Key"
+
+[BaseCurrency]
+other = "Base Currency"
+
+[RefreshExchangeRates]
+other = "Refresh Exchange Rates"
+
+[ExchangeRatesLastUpdated]
+other = "Exchange rates last updated"
+
+[ExchangeRatesNeverUpdated]
+other = "Never updated"
+
+[BatchEditSubscriptionGroup]
+other = "Batch Edit Subscription Group"
+
+[InputSubscriptionGroupName]
+other = "Enter the subscription group name"
+
+[NoSubscriptionSelected]
+other = "No manual subscription selected"
+
+[Link]
+other = "Link"
+
+[OpenLink]
+other = "Open"
+
+[SubscriptionExpirationAlert]
+other = "Subscription Expiration Alert"
+
+[SpecificSubscriptions]
+other = "Specific Subscriptions"
+
+[AllSubscriptionsExceptSelected]
+other = "Cover all subscriptions except selected subscriptions"
+
+[OnlySelectedSubscriptions]
+other = "Cover only selected subscriptions"
+
+[EnterSubscriptionIdAndNameToSearch]
+other = "Search by subscription ID or name"
+
+[DeleteSubscriptionReminderRule]
+other = "Delete Subscription Reminder Rule"
+
+[ConfirmDeleteSubscriptionReminderRule]
+other = "Delete this subscription reminder rule?"
+
+[SubscriptionExpirationReminderTitle]
+other = "[Subscription Expiration Reminder]"
+
+[SubscriptionExpirationReminderIntro]
+other = "The following manual subscriptions are about to expire:"
+
+[SubscriptionExpirationReminderItem]
+one = "{{.Name}} (ID {{.ID}}, {{.Group}}) expires on {{.Date}}, {{.Days}} day remaining"
+other = "{{.Name}} (ID {{.ID}}, {{.Group}}) expires on {{.Date}}, {{.Days}} days remaining"

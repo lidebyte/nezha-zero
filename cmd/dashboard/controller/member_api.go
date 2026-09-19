@@ -62,6 +62,10 @@ func (ma *memberAPI) serve() {
 	wr.POST("/force-update", ma.forceUpdate)
 	wr.POST("/nat", ma.addOrEditNAT)
 	wr.POST("/alert-rule", ma.addOrEditAlertRule)
+	wr.POST("/subscription", ma.addOrEditSubscription)
+	wr.POST("/batch-update-subscription-group", ma.batchUpdateSubscriptionGroup)
+	wr.GET("/search-subscription", ma.searchSubscription)
+	wr.POST("/currency/refresh", ma.refreshCurrencyRates)
 	wr.POST("/notification", ma.addOrEditNotification)
 	wr.POST("/notification/verify", ma.testNotification)
 	wr.POST("/ddns", ma.addOrEditDDNS)
@@ -269,6 +273,36 @@ func (ma *memberAPI) delete(c *gin.Context) {
 		if err == nil {
 			singleton.OnDeleteAlert(id)
 		}
+	case "subscription":
+		if !singleton.Conf.EnableSubscription {
+			c.JSON(http.StatusNotFound, model.Response{Code: http.StatusNotFound, Message: "订阅管理功能未启用"})
+			return
+		}
+		var subscription model.Subscription
+		if err = singleton.DB.First(&subscription, id).Error; err == nil {
+			err = singleton.DB.Transaction(func(tx *gorm.DB) error {
+				if err := tx.Unscoped().Delete(&subscription).Error; err != nil {
+					return err
+				}
+				var rules []model.AlertRule
+				if err := tx.Find(&rules).Error; err != nil {
+					return err
+				}
+				for i := range rules {
+					if !rules[i].IsSubscriptionExpirationRule() || !rules[i].Rules[0].Ignore[id] {
+						continue
+					}
+					delete(rules[i].Rules[0].Ignore, id)
+					if err := tx.Save(&rules[i]).Error; err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+			if err == nil {
+				audit.Record(c, audit.TypeConfig, "Subscription deleted", fmt.Sprintf("subscription: %s (ID %d)", subscription.Name, subscription.ID))
+			}
+		}
 	}
 	if err != nil {
 		c.JSON(http.StatusOK, model.Response{
@@ -307,6 +341,173 @@ func (ma *memberAPI) searchServer(c *gin.Context) {
 		"success": true,
 		"results": resp,
 	})
+}
+
+func (ma *memberAPI) searchSubscription(c *gin.Context) {
+	if !singleton.Conf.EnableSubscription {
+		c.JSON(http.StatusNotFound, gin.H{"success": false})
+		return
+	}
+	var subscriptions []model.Subscription
+	likeWord := "%" + c.Query("word") + "%"
+	singleton.DB.Select("id,name").Where("id = ? OR name LIKE ? OR group_name LIKE ? OR note LIKE ?",
+		c.Query("word"), likeWord, likeWord, likeWord).Find(&subscriptions)
+	resp := make([]searchResult, 0, len(subscriptions))
+	for i := range subscriptions {
+		resp = append(resp, searchResult{Value: subscriptions[i].ID, Name: subscriptions[i].Name, Text: subscriptions[i].Name})
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "results": resp})
+}
+
+type subscriptionForm struct {
+	ID        uint64
+	Name      string
+	StartDate string
+	EndDate   string
+	Price     string
+	PriceUnit string
+	Currency  string
+	Link      string
+	Note      string
+	Group     string
+}
+
+func parseOptionalSubscriptionDate(value string) (time.Time, error) {
+	if strings.TrimSpace(value) == "" {
+		return time.Time{}, nil
+	}
+	parsed, ok := model.ParseSubscriptionDate(value)
+	if !ok {
+		return time.Time{}, errors.New("日期格式无效")
+	}
+	return parsed, nil
+}
+
+func normalizeSubscriptionLink(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	lower := strings.ToLower(value)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") {
+		return value
+	}
+	return "https://" + value
+}
+
+func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
+	if !singleton.Conf.EnableSubscription {
+		c.JSON(http.StatusNotFound, model.Response{Code: http.StatusNotFound, Message: "订阅管理功能未启用"})
+		return
+	}
+	var form subscriptionForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("请求错误：%s", err)})
+		return
+	}
+	form.Name = strings.TrimSpace(form.Name)
+	form.Group = strings.TrimSpace(form.Group)
+	form.Currency = strings.ToUpper(strings.TrimSpace(form.Currency))
+	if form.Name == "" {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "订阅名称不能为空"})
+		return
+	}
+	if form.Group == "" {
+		form.Group = "Default"
+	}
+	if form.Currency == "" {
+		form.Currency = singleton.Conf.BaseCurrency
+		if form.Currency == "" {
+			form.Currency = "CNY"
+		}
+	}
+	if !model.IsSupportedCurrency(form.Currency) {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "不支持的帐单货币"})
+		return
+	}
+	startDate, err := parseOptionalSubscriptionDate(form.StartDate)
+	if err == nil {
+		var endDate time.Time
+		endDate, err = parseOptionalSubscriptionDate(form.EndDate)
+		if err == nil && !startDate.IsZero() && !endDate.IsZero() && endDate.Before(startDate) {
+			err = errors.New("结束时间不能早于开始时间")
+		}
+		if err == nil {
+			subscription := model.Subscription{
+				Name:      form.Name,
+				StartDate: startDate,
+				EndDate:   endDate,
+				Price:     strings.TrimSpace(form.Price),
+				PriceUnit: strings.TrimSpace(form.PriceUnit),
+				Currency:  form.Currency,
+				Link:      normalizeSubscriptionLink(form.Link),
+				Note:      strings.TrimSpace(form.Note),
+				Group:     form.Group,
+			}
+			if form.ID == 0 {
+				err = singleton.DB.Create(&subscription).Error
+			} else {
+				var existing model.Subscription
+				if err = singleton.DB.First(&existing, form.ID).Error; err == nil {
+					subscription.ID = existing.ID
+					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group").Updates(subscription).Error
+				}
+			}
+			if err == nil {
+				action := "Subscription created"
+				if form.ID != 0 {
+					action = "Subscription updated"
+				}
+				audit.Record(c, audit.TypeConfig, action, fmt.Sprintf("subscription: %s (ID %d)", subscription.Name, subscription.ID))
+				c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
+				go singleton.CheckExpirationReminders()
+				return
+			}
+		}
+	}
+	c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("请求错误：%s", err)})
+}
+
+func (ma *memberAPI) refreshCurrencyRates(c *gin.Context) {
+	if err := singleton.RefreshCurrencyRates(); err != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: err.Error()})
+		return
+	}
+	audit.Record(c, audit.TypeConfig, "Currency rates refreshed", fmt.Sprintf("provider: %s", singleton.Conf.CurrencyProvider))
+	c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
+}
+
+type batchUpdateSubscriptionGroupRequest struct {
+	Subscriptions []uint64
+	Group         string
+}
+
+func (ma *memberAPI) batchUpdateSubscriptionGroup(c *gin.Context) {
+	if !singleton.Conf.EnableSubscription {
+		c.JSON(http.StatusNotFound, model.Response{Code: http.StatusNotFound, Message: "订阅管理功能未启用"})
+		return
+	}
+	var req batchUpdateSubscriptionGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("请求错误：%s", err)})
+		return
+	}
+	if len(req.Subscriptions) == 0 {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "未选择订阅"})
+		return
+	}
+	req.Group = strings.TrimSpace(req.Group)
+	if req.Group == "" {
+		req.Group = "Default"
+	}
+	result := singleton.DB.Model(&model.Subscription{}).Where("id IN ?", req.Subscriptions).Update("group_name", req.Group)
+	if result.Error != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("数据库错误：%s", result.Error)})
+		return
+	}
+	audit.Record(c, audit.TypeConfig, "Subscription groups updated",
+		fmt.Sprintf("subscriptions: %v, group: %q", req.Subscriptions, req.Group))
+	c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
 }
 
 func (ma *memberAPI) searchTask(c *gin.Context) {
@@ -1056,27 +1257,48 @@ type alertRuleForm struct {
 	DailyReminder          string
 	Cover                  uint8
 	SkipServersRaw         string
+	SkipSubscriptionsRaw   string
 }
 
 func (ma *memberAPI) addOrEditAlertRule(c *gin.Context) {
 	var arf alertRuleForm
 	var r model.AlertRule
 	err := c.ShouldBindJSON(&arf)
-	if err == nil && arf.AlertType == 1 {
-		var serverIDs []uint64
-		if strings.TrimSpace(arf.Name) == "" {
-			err = errors.New("规则名称不能为空")
+	if err == nil && (arf.AlertType == 1 || arf.AlertType == 2) {
+		var selectedIDs []uint64
+		selectedRaw := arf.SkipServersRaw
+		ruleType := model.RuleTypeExpiration
+		if arf.AlertType == 2 {
+			if !singleton.Conf.EnableSubscription {
+				err = errors.New("订阅管理功能未启用")
+			}
+			selectedRaw = arf.SkipSubscriptionsRaw
+			ruleType = model.RuleTypeSubscriptionExpiration
+		}
+		if err != nil {
+			// Keep the feature-gate error set above.
 		} else if arf.AdvanceDays < 0 || arf.AdvanceDays > 365 {
 			err = errors.New("提前天数必须在 0 到 365 之间")
 		} else if arf.Cover > model.RuleCoverIgnoreAll {
 			err = errors.New("覆盖范围无效")
 		} else {
-			err = utils.Json.Unmarshal([]byte(arf.SkipServersRaw), &serverIDs)
+			err = utils.Json.Unmarshal([]byte(selectedRaw), &selectedIDs)
 		}
 		if err == nil {
-			selected := make(map[uint64]bool, len(serverIDs))
-			for _, id := range serverIDs {
+			selected := make(map[uint64]bool, len(selectedIDs))
+			for _, id := range selectedIDs {
 				selected[id] = true
+			}
+			if arf.AlertType == 2 && len(selectedIDs) > 0 {
+				var count int64
+				err = singleton.DB.Model(&model.Subscription{}).Where("id IN ?", selectedIDs).Count(&count).Error
+				if err == nil && count != int64(len(selected)) {
+					err = errors.New("包含不存在的订阅 ID")
+				}
+			}
+			if err != nil {
+				c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("请求错误：%s", err)})
+				return
 			}
 			enable := arf.Enable == "on"
 			r.ID = arf.ID
@@ -1089,7 +1311,7 @@ func (ma *memberAPI) addOrEditAlertRule(c *gin.Context) {
 			r.FailTriggerTasks = []uint64{}
 			r.RecoverTriggerTasks = []uint64{}
 			r.Rules = []model.Rule{{
-				Type:          model.RuleTypeExpiration,
+				Type:          ruleType,
 				AdvanceDays:   arf.AdvanceDays,
 				DailyReminder: arf.DailyReminder == "on",
 				Cover:         uint64(arf.Cover),
@@ -1110,7 +1332,7 @@ func (ma *memberAPI) addOrEditAlertRule(c *gin.Context) {
 		go singleton.CheckExpirationReminders()
 		return
 	}
-	if err == nil && arf.AlertType > 1 {
+	if err == nil && arf.AlertType > 2 {
 		err = errors.New("告警类型无效")
 	}
 	if err == nil {
@@ -1247,6 +1469,11 @@ type settingForm struct {
 	DisableSwitchTemplateInFrontend string
 	CompatAPIDisable                string
 	UseTemplateHandleNoRoute        string
+	EnableSubscription              string
+	EnableCurrencyConversion        string
+	CurrencyProvider                string
+	CurrencyAPIKey                  string
+	BaseCurrency                    string
 	DisableOauthLogin               string
 	DisablePasswordLogin            string
 }
@@ -1395,6 +1622,37 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	}
 
 	oldConf := *singleton.Conf
+	enableCurrencyConversion := sf.EnableCurrencyConversion == "on"
+	currencyProvider := strings.ToLower(strings.TrimSpace(sf.CurrencyProvider))
+	if currencyProvider == "" {
+		currencyProvider = oldConf.CurrencyProvider
+		if currencyProvider == "" {
+			currencyProvider = "fixer"
+		}
+	}
+	if currencyProvider != "fixer" && currencyProvider != "apilayer" {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "不支持的货币换算服务"})
+		return
+	}
+	baseCurrency := strings.ToUpper(strings.TrimSpace(sf.BaseCurrency))
+	if baseCurrency == "" {
+		baseCurrency = oldConf.BaseCurrency
+		if baseCurrency == "" {
+			baseCurrency = "CNY"
+		}
+	}
+	if !model.IsSupportedCurrency(baseCurrency) {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "不支持的基准货币"})
+		return
+	}
+	currencyAPIKey := strings.TrimSpace(sf.CurrencyAPIKey)
+	if currencyAPIKey == "********" {
+		currencyAPIKey = oldConf.CurrencyAPIKey
+	}
+	if enableCurrencyConversion && currencyAPIKey == "" {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "启用货币换算时必须填写 API Key"})
+		return
+	}
 
 	singleton.Conf.Language = sf.Language
 	singleton.Conf.UseExternalGeoIP = sf.UseExternalGeoIP == "on"
@@ -1403,6 +1661,11 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	singleton.Conf.DisableSwitchTemplateInFrontend = sf.DisableSwitchTemplateInFrontend == "on"
 	singleton.Conf.UseTemplateHandleNoRoute = sf.UseTemplateHandleNoRoute == "on"
 	singleton.Conf.CompatAPIDisable = sf.CompatAPIDisable == "on"
+	singleton.Conf.EnableSubscription = sf.EnableSubscription == "on"
+	singleton.Conf.EnableCurrencyConversion = enableCurrencyConversion
+	singleton.Conf.CurrencyProvider = currencyProvider
+	singleton.Conf.CurrencyAPIKey = currencyAPIKey
+	singleton.Conf.BaseCurrency = baseCurrency
 	singleton.Conf.Oauth2.DisableOauthLogin = disableOauthLogin
 	singleton.Conf.Site.DisablePasswordLogin = disablePasswordLogin
 	singleton.Conf.Cover = sf.Cover
@@ -1435,6 +1698,18 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		})
 		return
 	}
+	if !oldConf.EnableSubscription && singleton.Conf.EnableSubscription {
+		go singleton.CheckExpirationReminders()
+	}
+	if singleton.Conf.EnableSubscription && singleton.Conf.EnableCurrencyConversion &&
+		(!oldConf.EnableCurrencyConversion || oldConf.CurrencyProvider != singleton.Conf.CurrencyProvider ||
+			oldConf.CurrencyAPIKey != singleton.Conf.CurrencyAPIKey || oldConf.BaseCurrency != singleton.Conf.BaseCurrency) {
+		go func() {
+			if err := singleton.RefreshCurrencyRates(); err != nil {
+				log.Printf("NEZHA>> refresh currency rates after settings update failed: %v", err)
+			}
+		}()
+	}
 
 	if passwordChanged {
 		singleton.DB.Unscoped().Where("1 = 1").Delete(&model.User{})
@@ -1466,6 +1741,11 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		EnablePlainIPInNotification:     sf.EnablePlainIPInNotification == "on",
 		DisableSwitchTemplateInFrontend: sf.DisableSwitchTemplateInFrontend == "on",
 		CompatAPIDisable:                sf.CompatAPIDisable == "on",
+		EnableSubscription:              sf.EnableSubscription == "on",
+		EnableCurrencyConversion:        enableCurrencyConversion,
+		CurrencyProvider:                currencyProvider,
+		BaseCurrency:                    baseCurrency,
+		CurrencyAPIKeyChanged:           oldConf.CurrencyAPIKey != currencyAPIKey,
 		UseTemplateHandleNoRoute:        sf.UseTemplateHandleNoRoute == "on",
 		DisableOauthLogin:               disableOauthLogin,
 		DisablePasswordLogin:            disablePasswordLogin,

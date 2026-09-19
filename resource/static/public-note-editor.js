@@ -170,7 +170,7 @@
   }
 
   function defaultWheelDate(target) {
-    if (target === "pne_end_date") return addYears(new Date(), 1);
+    if (target === "pne_end_date" || target === "EndDate") return addYears(new Date(), 1);
     return new Date();
   }
 
@@ -907,5 +907,12 @@
     state.$modal.modal("show");
   }
 
+  function initDateWheels(modal) {
+    state.$modal = $(modal);
+    if (!state.$modal.length) return;
+    initAllWheelDates();
+  }
+
   global.PublicNoteEditor = { open: open };
+  global.NezhaDateWheel = { init: initDateWheels };
 })(window);

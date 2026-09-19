@@ -262,6 +262,7 @@ function alertRuleTypeChanged() {
   const type = parseInt($("#ruleForm [name=AlertType]").val(), 10) || 0;
   $(".standard-alert-fields").toggle(type === 0);
   $(".expiration-alert-fields").toggle(type === 1);
+  $(".subscription-expiration-alert-fields").toggle(type === 2);
 }
 
 function alertRuleData() {
@@ -280,6 +281,19 @@ function alertRuleData() {
     data.Enable = form.find("[name=ExpirationEnable]").is(":checked") ? "on" : "";
     data.Cover = parseInt(form.find("[name=Cover]").val(), 10) || 0;
     data.SkipServersRaw = JSON.stringify(
+      [...String(value).matchAll(/\d+/g)].map(function (match) {
+        return parseInt(match[0], 10);
+      })
+    );
+    return data;
+  }
+  if (alertType === 2) {
+    const value = form.find("[name=SkipSubscriptionsRaw]").val() || "";
+    data.AdvanceDays = parseInt(form.find("[name=SubscriptionAdvanceDays]").val(), 10) || 0;
+    data.DailyReminder = form.find("[name=SubscriptionDailyReminder]").is(":checked") ? "on" : "";
+    data.Enable = form.find("[name=SubscriptionExpirationEnable]").is(":checked") ? "on" : "";
+    data.Cover = parseInt(form.find("[name=SubscriptionCover]").val(), 10) || 0;
+    data.SkipSubscriptionsRaw = JSON.stringify(
       [...String(value).matchAll(/\d+/g)].map(function (match) {
         return parseInt(match[0], 10);
       })
@@ -328,10 +342,15 @@ function addOrEditAlertRule(rule, alertType) {
     form.find("[name=AdvanceDays]").val(1);
     form.find("[name=Cover]").dropdown("set selected", "0");
     form.find("[name=SkipServersRaw]").val("");
+    form.find("[name=SkipSubscriptionsRaw]").val("");
     modal.find(".expiration-daily-reminder").checkbox("set unchecked");
     modal.find(".expiration-rule-enable").checkbox(
       !rule || rule.Enable ? "set checked" : "set unchecked"
     );
+    form.find("[name=SubscriptionAdvanceDays]").val(1);
+    form.find("[name=SubscriptionCover]").dropdown("set selected", "0");
+    modal.find(".subscription-expiration-daily-reminder").checkbox("set unchecked");
+    modal.find(".subscription-expiration-rule-enable").checkbox("set checked");
     const failRaw = rule ? rule.FailTriggerTasksRaw || "[]" : "[]";
     const recoverRaw = rule ? rule.RecoverTriggerTasksRaw || "[]" : "[]";
     form.find("[name=FailTriggerTasksRaw]").val(failRaw);
@@ -346,11 +365,12 @@ function addOrEditAlertRule(rule, alertType) {
       node2.after('<a class="ui label transition visible" data-value="' + id +
         '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
     });
-  } else {
+  } else if (type === 1) {
     form.find("[name=RulesRaw]").val("");
     form.find("[name=TriggerMode]").dropdown("set selected", "0");
     form.find("[name=FailTriggerTasksRaw]").val("[]");
     form.find("[name=RecoverTriggerTasksRaw]").val("[]");
+    form.find("[name=SkipSubscriptionsRaw]").val("");
     modal.find(".ui.rule-enable.checkbox").checkbox(
       rule && rule.Enable ? "set checked" : "set unchecked"
     );
@@ -373,6 +393,33 @@ function addOrEditAlertRule(rule, alertType) {
     const serverIcon = form.find("i.dropdown.icon.expirationSpecificServer");
     serverIDs.forEach(function (id) {
       serverIcon.after('<a class="ui label transition visible" data-value="' + id +
+        '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
+    });
+  } else {
+    form.find("[name=RulesRaw]").val("");
+    form.find("[name=TriggerMode]").dropdown("set selected", "0");
+    form.find("[name=FailTriggerTasksRaw]").val("[]");
+    form.find("[name=RecoverTriggerTasksRaw]").val("[]");
+    form.find("[name=SkipServersRaw]").val("");
+    const expirationRule = rule ? JSON.parse(rule.RulesRaw || "[]")[0] || {} : {};
+    form.find("[name=SubscriptionAdvanceDays]").val(rule ? expirationRule.advance_days : 1);
+    form.find("[name=SubscriptionCover]").dropdown(
+      "set selected",
+      String(rule ? expirationRule.cover || 0 : 0)
+    );
+    modal.find(".subscription-expiration-daily-reminder").checkbox(
+      rule && expirationRule.daily_reminder ? "set checked" : "set unchecked"
+    );
+    modal.find(".subscription-expiration-rule-enable").checkbox(
+      !rule || rule.Enable ? "set checked" : "set unchecked"
+    );
+    const subscriptionIDs = Object.keys(expirationRule.ignore || {}).map(function (id) {
+      return parseInt(id, 10);
+    });
+    form.find("[name=SkipSubscriptionsRaw]").val(subscriptionIDs.join(","));
+    const subscriptionIcon = form.find("i.dropdown.icon.subscriptionExpirationSpecific");
+    subscriptionIDs.forEach(function (id) {
+      subscriptionIcon.after('<a class="ui label transition visible" data-value="' + id +
         '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
     });
   }
@@ -960,6 +1007,18 @@ $(document).ready(() => {
       },
       apiSettings: {
         url: "/api/search-server?word={query}",
+        cache: false,
+      },
+    });
+  } catch (error) { }
+});
+
+$(document).ready(() => {
+  try {
+    $(".ui.subscriptions.search.dropdown").dropdown({
+      clearable: true,
+      apiSettings: {
+        url: "/api/search-subscription?word={query}",
         cache: false,
       },
     });

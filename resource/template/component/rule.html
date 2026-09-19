@@ -9,6 +9,7 @@
                 <select name="AlertType" class="ui fluid dropdown" onchange="alertRuleTypeChanged()">
                     <option value="0">{{tr "StandardAlert"}}</option>
                     <option value="1">{{tr "ExpirationAlert"}}</option>
+                    <option value="2">{{tr "SubscriptionExpirationAlert"}}</option>
                 </select>
             </div>
             <div class="field">
@@ -86,6 +87,40 @@
                 <div class="field">
                     <div class="ui expiration-rule-enable checkbox">
                         <input type="checkbox" name="ExpirationEnable" tabindex="0" class="hidden">
+                        <label>{{tr "Enable"}}</label>
+                    </div>
+                </div>
+            </div>
+            <div class="subscription-expiration-alert-fields" style="display:none">
+                <div class="field">
+                    <label>{{tr "AdvanceReminderDays"}}</label>
+                    <input type="number" name="SubscriptionAdvanceDays" min="0" max="365" value="1">
+                </div>
+                <div class="field">
+                    <div class="ui checkbox subscription-expiration-daily-reminder">
+                        <input type="checkbox" name="SubscriptionDailyReminder">
+                        <label>{{tr "DailyExpirationReminder"}}</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>{{tr "Coverage"}}</label>
+                    <select name="SubscriptionCover" class="ui fluid dropdown">
+                        <option value="0">{{tr "AllSubscriptionsExceptSelected"}}</option>
+                        <option value="1">{{tr "OnlySelectedSubscriptions"}}</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>{{tr "SpecificSubscriptions"}}</label>
+                    <div class="ui fluid multiple subscriptions search selection dropdown">
+                        <input type="hidden" name="SkipSubscriptionsRaw">
+                        <i class="dropdown icon subscriptionExpirationSpecific"></i>
+                        <div class="default text">{{tr "EnterSubscriptionIdAndNameToSearch"}}</div>
+                        <div class="menu"></div>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui subscription-expiration-rule-enable checkbox">
+                        <input type="checkbox" name="SubscriptionExpirationEnable" tabindex="0" class="hidden">
                         <label>{{tr "Enable"}}</label>
                     </div>
                 </div>

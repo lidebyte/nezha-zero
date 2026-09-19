@@ -62,6 +62,11 @@ type SettingChangeInput struct {
 	EnablePlainIPInNotification     bool
 	DisableSwitchTemplateInFrontend bool
 	CompatAPIDisable                bool
+	EnableSubscription              bool
+	EnableCurrencyConversion        bool
+	CurrencyProvider                string
+	BaseCurrency                    string
+	CurrencyAPIKeyChanged           bool
 	UseTemplateHandleNoRoute        bool
 	DisableOauthLogin               bool
 	DisablePasswordLogin            bool
@@ -128,6 +133,13 @@ func BuildConfigSettingDetail(before *model.Config, in SettingChangeInput) strin
 	appendBoolChange(&changes, "Plain IP in notification", before.EnablePlainIPInNotification, in.EnablePlainIPInNotification)
 	appendBoolChange(&changes, "Disable frontend theme switch", before.DisableSwitchTemplateInFrontend, in.DisableSwitchTemplateInFrontend)
 	appendBoolChange(&changes, "Template 404 handler", before.UseTemplateHandleNoRoute, in.UseTemplateHandleNoRoute)
+	appendBoolChange(&changes, "Subscription management", before.EnableSubscription, in.EnableSubscription)
+	appendBoolChange(&changes, "Currency conversion", before.EnableCurrencyConversion, in.EnableCurrencyConversion)
+	appendStrChange(&changes, "Currency provider", before.CurrencyProvider, in.CurrencyProvider)
+	appendStrChange(&changes, "Base currency", before.BaseCurrency, in.BaseCurrency)
+	if in.CurrencyAPIKeyChanged {
+		changes = append(changes, "Currency API key changed")
+	}
 	if in.CustomCodeChanged {
 		changes = append(changes, "Frontend custom code modified")
 	}

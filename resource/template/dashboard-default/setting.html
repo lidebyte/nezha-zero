@@ -229,6 +229,46 @@
                 <textarea name="CustomCodeDashboard">{{.Conf.Site.CustomCodeDashboard}}</textarea>
             </div>
             <div class="field">
+                <label>{{tr "SubscriptionManagement"}}</label>
+            </div>
+            <div class="ui segment">
+                <div class="field">
+                    <div class="ui checkbox enable-subscription">
+                        <input name="EnableSubscription" type="checkbox" tabindex="0" class="hidden">
+                        <label>{{tr "EnableSubscriptionManagement"}}</label>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui checkbox enable-currency-conversion">
+                        <input name="EnableCurrencyConversion" type="checkbox" tabindex="0" class="hidden">
+                        <label>{{tr "EnableCurrencyConversion"}}</label>
+                    </div>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label>{{tr "CurrencyProvider"}}</label>
+                        <select name="CurrencyProvider" class="ui fluid dropdown">
+                            <option value="fixer" {{if eq .Conf.CurrencyProvider "fixer"}}selected{{end}}>fixer.io</option>
+                            <option value="apilayer" {{if eq .Conf.CurrencyProvider "apilayer"}}selected{{end}}>apilayer.com</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>{{tr "BaseCurrency"}}</label>
+                        <select name="BaseCurrency" class="ui fluid dropdown">
+                            {{range .Currencies}}<option value="{{.Code}}" {{if eq $.Conf.BaseCurrency .Code}}selected{{end}}>{{.Code}} - {{.Name}} ({{.Symbol}})</option>{{end}}
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>{{tr "CurrencyAPIKey"}}</label>
+                    <input name="CurrencyAPIKey" type="password" autocomplete="new-password" value="{{if .Conf.CurrencyAPIKey}}********{{end}}">
+                </div>
+                <div class="field">
+                    <button class="ui button" id="currencyRefreshBtn" type="button">{{tr "RefreshExchangeRates"}}</button>
+                    <small>{{tr "ExchangeRatesLastUpdated"}}: {{if .CurrencyRatesUpdatedAt}}{{.CurrencyRatesUpdatedAt}}{{else}}{{tr "ExchangeRatesNeverUpdated"}}{{end}}</small>
+                </div>
+            </div>
+            <div class="field">
                 <label>{{tr "IPChangeAlert"}}</label>
             </div>
             <div class="ui segment">
@@ -778,6 +818,12 @@
     {{ if .Conf.DisableSwitchTemplateInFrontend }}
     $('.checkbox.disable-switch-template').checkbox('set checked')
     {{ end }}
+    {{ if .Conf.EnableSubscription }}
+    $('.checkbox.enable-subscription').checkbox('set checked')
+    {{ end }}
+    {{ if .Conf.EnableCurrencyConversion }}
+    $('.checkbox.enable-currency-conversion').checkbox('set checked')
+    {{ end }}
     {{ if not .Conf.CompatAPIDisable }}
     $('.checkbox.enable-compat-api').checkbox('set checked')
     {{ end }}
@@ -786,6 +832,22 @@
     $('.checkbox.template-handle-no-route').checkbox('set checked')
     {{ end }}
     togglePasswordLoginSettings();
+    $('#currencyRefreshBtn').on('click', function () {
+        const $btn = $(this);
+        $btn.addClass('loading disabled');
+        $.post('/api/currency/refresh')
+            .then(function (resp) {
+                if (resp.code === 200) location.reload();
+                else {
+                    $btn.removeClass('loading disabled');
+                    $.suiAlert({title: '', description: resp.message, type: 'error', time: '5', position: 'top-center'});
+                }
+            })
+            .catch(function (err) {
+                $btn.removeClass('loading disabled');
+                $.suiAlert({title: '', description: err, type: 'error', time: '5', position: 'top-center'});
+            });
+    });
 </script>
 <script>
     function generateRandomString() {

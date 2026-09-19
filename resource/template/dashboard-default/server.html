@@ -150,8 +150,9 @@ table.ui.basic.table th:nth-child(5) {
     var clipboardAll = new ClipboardJS('button[data-clipboard-text]');
     const checkBoxList = document.querySelectorAll('tbody > tr > td > input.nezha-servers[type=checkbox]')
     function checkAllServer() {
+        const shouldCheck = Array.from(checkBoxList).some(cb => !cb.checked)
         checkBoxList.forEach(cb => {
-            cb.checked = true
+            cb.checked = shouldCheck
         })
     }
     function forceUpdate() {

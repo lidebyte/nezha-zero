@@ -1087,6 +1087,9 @@ other = "Use 0 for free (FREE), -1 for pay-as-you-go (PAYG)"
 [PNEAutoRenewal]
 other = "Auto renewal"
 
+[SubscriptionAutoRenewal]
+other = "Auto renewal"
+
 [PNEEnablePlan]
 other = "Enable plan info"
 

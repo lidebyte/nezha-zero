@@ -1087,6 +1087,9 @@ other = "填 0 表示免費（FREE），-1 表示按量付費（PAYG）"
 [PNEAutoRenewal]
 other = "自動續期"
 
+[SubscriptionAutoRenewal]
+other = "自動續訂"
+
 [PNEEnablePlan]
 other = "啟用套餐資訊"
 

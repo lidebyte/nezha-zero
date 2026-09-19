@@ -164,44 +164,51 @@ func SortedCurrencies() []Currency {
 // read directly from Server.PublicNote and are never copied into this table.
 type Subscription struct {
 	Common
-	Name      string
-	StartDate time.Time
-	EndDate   time.Time `gorm:"index"`
-	Price     string
-	PriceUnit string
-	Currency  string `gorm:"size:3"`
-	Link      string
-	Note      string
-	Group     string `gorm:"column:group_name"`
-	Disabled  bool   `gorm:"default:false"`
+	Name        string
+	StartDate   time.Time
+	EndDate     time.Time `gorm:"index"`
+	Price       string
+	PriceUnit   string
+	Currency    string `gorm:"size:3"`
+	Link        string
+	Note        string
+	Group       string `gorm:"column:group_name"`
+	AutoRenewal *bool  `gorm:"not null;default:true"`
+	Disabled    bool   `gorm:"default:false"`
+}
+
+func (s Subscription) AutoRenewalEnabled() bool {
+	return s.AutoRenewal == nil || *s.AutoRenewal
 }
 
 func (s Subscription) MarshalForDashboard() template.JS {
 	type dashboardSubscription struct {
-		ID        uint64 `json:"ID"`
-		Name      string `json:"Name"`
-		StartDate string `json:"StartDate"`
-		EndDate   string `json:"EndDate"`
-		Price     string `json:"Price"`
-		PriceUnit string `json:"PriceUnit"`
-		Currency  string `json:"Currency"`
-		Link      string `json:"Link"`
-		Note      string `json:"Note"`
-		Group     string `json:"Group"`
-		Enable    bool   `json:"Enable"`
+		ID          uint64 `json:"ID"`
+		Name        string `json:"Name"`
+		StartDate   string `json:"StartDate"`
+		EndDate     string `json:"EndDate"`
+		Price       string `json:"Price"`
+		PriceUnit   string `json:"PriceUnit"`
+		Currency    string `json:"Currency"`
+		Link        string `json:"Link"`
+		Note        string `json:"Note"`
+		Group       string `json:"Group"`
+		AutoRenewal bool   `json:"AutoRenewal"`
+		Enable      bool   `json:"Enable"`
 	}
 	data, _ := utils.Json.Marshal(dashboardSubscription{
-		ID:        s.ID,
-		Name:      s.Name,
-		StartDate: formatSubscriptionDate(s.StartDate),
-		EndDate:   formatSubscriptionDate(s.EndDate),
-		Price:     s.Price,
-		PriceUnit: s.PriceUnit,
-		Currency:  s.Currency,
-		Link:      s.Link,
-		Note:      s.Note,
-		Group:     s.Group,
-		Enable:    !s.Disabled,
+		ID:          s.ID,
+		Name:        s.Name,
+		StartDate:   formatSubscriptionDate(s.StartDate),
+		EndDate:     formatSubscriptionDate(s.EndDate),
+		Price:       s.Price,
+		PriceUnit:   s.PriceUnit,
+		Currency:    s.Currency,
+		Link:        s.Link,
+		Note:        s.Note,
+		Group:       s.Group,
+		AutoRenewal: s.AutoRenewalEnabled(),
+		Enable:      !s.Disabled,
 	})
 	return template.JS(data)
 }
@@ -287,6 +294,23 @@ func SubscriptionRemainingDays(now, end time.Time) int {
 	fromDate := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
 	toDate := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
 	return int(toDate.Sub(fromDate) / (24 * time.Hour))
+}
+
+func RenewSubscriptionEndDate(end time.Time, cycle string, now time.Time) (time.Time, bool) {
+	if end.IsZero() || end.After(now.In(end.Location())) {
+		return end, false
+	}
+	months := SubscriptionCycleMonths(cycle)
+	if months == 0 {
+		return end, false
+	}
+	for i := 0; !end.After(now.In(end.Location())) && i < 2400; i++ {
+		end = end.AddDate(0, months, 0)
+	}
+	if !end.After(now.In(end.Location())) {
+		return end, false
+	}
+	return end, true
 }
 
 func formatSubscriptionDate(value time.Time) string {

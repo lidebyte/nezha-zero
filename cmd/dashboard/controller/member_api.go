@@ -360,17 +360,18 @@ func (ma *memberAPI) searchSubscription(c *gin.Context) {
 }
 
 type subscriptionForm struct {
-	ID        uint64
-	Name      string
-	StartDate string
-	EndDate   string
-	Price     string
-	PriceUnit string
-	Currency  string
-	Link      string
-	Note      string
-	Group     string
-	Enable    string
+	ID          uint64
+	Name        string
+	StartDate   string
+	EndDate     string
+	Price       string
+	PriceUnit   string
+	Currency    string
+	Link        string
+	Note        string
+	Group       string
+	AutoRenewal string
+	Enable      string
 }
 
 func parseOptionalSubscriptionDate(value string) (time.Time, error) {
@@ -434,17 +435,19 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 			err = errors.New("结束时间不能早于开始时间")
 		}
 		if err == nil {
+			autoRenewal := form.AutoRenewal == "on"
 			subscription := model.Subscription{
-				Name:      form.Name,
-				StartDate: startDate,
-				EndDate:   endDate,
-				Price:     strings.TrimSpace(form.Price),
-				PriceUnit: strings.TrimSpace(form.PriceUnit),
-				Currency:  form.Currency,
-				Link:      normalizeSubscriptionLink(form.Link),
-				Note:      strings.TrimSpace(form.Note),
-				Group:     form.Group,
-				Disabled:  form.Enable == "off",
+				Name:        form.Name,
+				StartDate:   startDate,
+				EndDate:     endDate,
+				Price:       strings.TrimSpace(form.Price),
+				PriceUnit:   strings.TrimSpace(form.PriceUnit),
+				Currency:    form.Currency,
+				Link:        normalizeSubscriptionLink(form.Link),
+				Note:        strings.TrimSpace(form.Note),
+				Group:       form.Group,
+				AutoRenewal: &autoRenewal,
+				Disabled:    form.Enable == "off",
 			}
 			if form.ID == 0 {
 				err = singleton.DB.Create(&subscription).Error
@@ -452,7 +455,7 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				var existing model.Subscription
 				if err = singleton.DB.First(&existing, form.ID).Error; err == nil {
 					subscription.ID = existing.ID
-					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group", "Disabled").Updates(subscription).Error
+					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group", "AutoRenewal", "Disabled").Updates(subscription).Error
 				}
 			}
 			if err == nil {

@@ -32,7 +32,8 @@ func TestBatchUpdateSubscriptionGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := model.Subscription{Name: "first", Group: "Default", Price: "10", PriceUnit: "month", Currency: "USD"}
-	second := model.Subscription{Name: "second", Group: "Default"}
+	autoRenewalDisabled := false
+	second := model.Subscription{Name: "second", Group: "Default", AutoRenewal: &autoRenewalDisabled}
 	if err := db.Create(&first).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -72,6 +73,12 @@ func TestBatchUpdateSubscriptionGroup(t *testing.T) {
 	}
 	if subscriptions[0].Currency != "USD" {
 		t.Fatalf("currency was not persisted: %q", subscriptions[0].Currency)
+	}
+	if !subscriptions[0].AutoRenewalEnabled() {
+		t.Fatal("default auto renewal was not persisted as enabled")
+	}
+	if subscriptions[1].AutoRenewalEnabled() {
+		t.Fatal("disabled auto renewal was not persisted")
 	}
 }
 

@@ -133,6 +133,21 @@ func checkSubscriptionExpirationReminders() {
 		return
 	}
 	now := time.Now()
+	for i := range subscriptions {
+		subscription := &subscriptions[i]
+		if subscription.Disabled || !subscription.AutoRenewalEnabled() {
+			continue
+		}
+		renewedEnd, renewed := model.RenewSubscriptionEndDate(subscription.EndDate, subscription.PriceUnit, now)
+		if !renewed {
+			continue
+		}
+		if err := DB.Model(subscription).Update("end_date", renewedEnd).Error; err != nil {
+			log.Printf("NEZHA>> renew subscription %d failed: %v", subscription.ID, err)
+			continue
+		}
+		subscription.EndDate = renewedEnd
+	}
 	for _, rule := range rules {
 		if !rule.Enabled() || !rule.IsSubscriptionExpirationRule() {
 			continue

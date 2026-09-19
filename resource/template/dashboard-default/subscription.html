@@ -190,6 +190,12 @@
             <div class="field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
             <div class="field"><label>{{tr "Note"}}</label><textarea name="Note"></textarea></div>
             <div class="field">
+                <div class="ui checkbox subscription-auto-renewal">
+                    <input name="AutoRenewal" type="checkbox" tabindex="0" class="hidden">
+                    <label>{{tr "SubscriptionAutoRenewal"}}</label>
+                </div>
+            </div>
+            <div class="field">
                 <div class="ui checkbox subscription-enable">
                     <input name="Enable" type="checkbox" tabindex="0" class="hidden">
                     <label>{{tr "Enable"}}</label>
@@ -219,6 +225,7 @@ function subscriptionFormData() {
         Group: form.find('[name=Group]').val().trim(),
         Link: form.find('[name=Link]').val().trim(),
         Note: form.find('[name=Note]').val().trim(),
+        AutoRenewal: form.find('[name=AutoRenewal]').is(':checked') ? 'on' : 'off',
         Enable: form.find('[name=Enable]').is(':checked') ? 'on' : 'off'
     };
 }
@@ -237,6 +244,9 @@ function addOrEditSubscription(subscription) {
     form.find('[name=Group]').val(current.Group || 'Default');
     form.find('[name=Link]').val(current.Link || '');
     form.find('[name=Note]').val(current.Note || '');
+    const autoRenewalCheckbox = form.find('.subscription-auto-renewal.checkbox');
+    autoRenewalCheckbox.checkbox();
+    autoRenewalCheckbox.checkbox(!subscription || current.AutoRenewal ? 'set checked' : 'set unchecked');
     const enableCheckbox = form.find('.subscription-enable.checkbox');
     enableCheckbox.checkbox();
     enableCheckbox.checkbox(!subscription || current.Enable ? 'set checked' : 'set unchecked');

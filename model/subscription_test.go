@@ -104,3 +104,47 @@ func TestSubscriptionRemainingDays(t *testing.T) {
 		t.Fatalf("remaining days = %d, want 1", got)
 	}
 }
+
+func TestRenewSubscriptionEndDate(t *testing.T) {
+	location := time.FixedZone("UTC+8", 8*60*60)
+	now := time.Date(2026, 9, 20, 9, 0, 0, 0, location)
+
+	tests := []struct {
+		name    string
+		end     time.Time
+		cycle   string
+		want    time.Time
+		renewed bool
+	}{
+		{
+			name:    "renews expired monthly subscription through today",
+			end:     time.Date(2026, 7, 20, 0, 0, 0, 0, location),
+			cycle:   "月",
+			want:    time.Date(2026, 10, 20, 0, 0, 0, 0, location),
+			renewed: true,
+		},
+		{
+			name:    "keeps future expiration",
+			end:     time.Date(2027, 9, 20, 0, 0, 0, 0, location),
+			cycle:   "年",
+			want:    time.Date(2027, 9, 20, 0, 0, 0, 0, location),
+			renewed: false,
+		},
+		{
+			name:    "does not renew lifetime subscription",
+			end:     time.Date(2025, 9, 20, 0, 0, 0, 0, location),
+			cycle:   "永续",
+			want:    time.Date(2025, 9, 20, 0, 0, 0, 0, location),
+			renewed: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, renewed := RenewSubscriptionEndDate(test.end, test.cycle, now)
+			if renewed != test.renewed || !got.Equal(test.want) {
+				t.Fatalf("RenewSubscriptionEndDate() = (%s, %t), want (%s, %t)", got, renewed, test.want, test.renewed)
+			}
+		})
+	}
+}

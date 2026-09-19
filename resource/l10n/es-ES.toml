@@ -1078,6 +1078,9 @@ other = "0 = gratis (FREE), -1 = pago por uso (PAYG)"
 [PNEAutoRenewal]
 other = "Renovación automática"
 
+[SubscriptionAutoRenewal]
+other = "Renovación automática"
+
 [PNEEnablePlan]
 other = "Activar información del plan"
 

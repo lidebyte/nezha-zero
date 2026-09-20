@@ -134,3 +134,18 @@ func TestRenewSubscriptionEndDate(t *testing.T) {
 		})
 	}
 }
+
+func TestIsLifetimeSubscriptionCycle(t *testing.T) {
+	lifetime := []string{"永续", "永久", "lifetime", " Lifetime ", "LIFETIME"}
+	for _, value := range lifetime {
+		if !IsLifetimeSubscriptionCycle(value) {
+			t.Errorf("IsLifetimeSubscriptionCycle(%q) = false, want true", value)
+		}
+	}
+	recurring := []string{"月", "年", "month", "", "季"}
+	for _, value := range recurring {
+		if IsLifetimeSubscriptionCycle(value) {
+			t.Errorf("IsLifetimeSubscriptionCycle(%q) = true, want false", value)
+		}
+	}
+}

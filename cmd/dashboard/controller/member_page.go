@@ -82,10 +82,6 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	}
 	now := time.Now()
 	rates, _, _ := singleton.CurrencyRateSnapshot()
-	isLifetimeCycle := func(value string) bool {
-		value = strings.ToLower(strings.TrimSpace(value))
-		return value == "永续" || value == "永久" || value == "lifetime"
-	}
 	convertPrice := func(price, currency string) string {
 		if !singleton.Conf.EnableCurrencyConversion || currency == "" {
 			return ""
@@ -102,7 +98,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	}
 	recurringCost := func(price, priceUnit, currency string) (float64, float64, string, bool, string) {
 		cycle := strings.ToLower(strings.TrimSpace(priceUnit))
-		if isLifetimeCycle(cycle) {
+		if model.IsLifetimeSubscriptionCycle(cycle) {
 			return 0, 0, "", false, ""
 		}
 		amount, ok := model.ParsePriceAmount(price)
@@ -155,7 +151,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		case 60:
 			messageID = "BillingCycleFiveYears"
 		default:
-			if isLifetimeCycle(value) {
+			if model.IsLifetimeSubscriptionCycle(value) {
 				messageID = "PNELifetime"
 			}
 		}
@@ -221,7 +217,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			EndDate:        subscriptionDate(item.EndDate),
 			RemainingDays:  remainingDays,
 			HasEndDate:     !item.EndDate.IsZero(),
-			Lifetime:       isLifetimeCycle(item.PriceUnit),
+			Lifetime:       model.IsLifetimeSubscriptionCycle(item.PriceUnit),
 			Price:          item.Price,
 			PriceUnit:      item.PriceUnit,
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),

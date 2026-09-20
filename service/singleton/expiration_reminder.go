@@ -156,7 +156,9 @@ func checkSubscriptionExpirationReminders() {
 		config := rule.Rules[0]
 		var due []model.Subscription
 		for _, subscription := range subscriptions {
-			if subscription.Disabled || subscription.EndDate.IsZero() || !expirationReminderCoversID(config.Cover, config.Ignore, subscription.ID) {
+			if subscription.Disabled || subscription.EndDate.IsZero() ||
+				model.IsLifetimeSubscriptionCycle(subscription.PriceUnit) ||
+				!expirationReminderCoversID(config.Cover, config.Ignore, subscription.ID) {
 				continue
 			}
 			days := calendarDaysBetween(now.In(subscription.EndDate.Location()), subscription.EndDate)

@@ -469,6 +469,14 @@ func subscriptionAutoRenewal(raw json.RawMessage) bool {
 	return value == "1" || strings.EqualFold(value, "true")
 }
 
+// IsLifetimeSubscriptionCycle reports whether the cycle labels the subscription
+// as lifetime (永续), meaning no expiration reminder should fire regardless of
+// any leftover EndDate value.
+func IsLifetimeSubscriptionCycle(value string) bool {
+	value = strings.ToLower(strings.TrimSpace(value))
+	return value == "永续" || value == "永久" || value == "lifetime"
+}
+
 func SubscriptionCycleMonths(cycle string) int {
 	switch strings.ToLower(strings.TrimSpace(cycle)) {
 	case "月", "mo", "month", "monthly", "m":

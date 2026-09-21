@@ -129,7 +129,6 @@ html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"
                         <th>{{tr "PriceUnit"}}</th>
                         <th>{{tr "Currency"}}</th>
                         {{if $.Conf.EnableCurrencyConversion}}<th>{{tr "ConvertedPrice"}}</th>{{end}}
-                        <th>{{tr "Note"}}</th>
                         <th>{{tr "Administration"}}</th>
                     </tr>
                 </thead>
@@ -147,7 +146,6 @@ html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"
                         <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
                         {{if $.Conf.EnableCurrencyConversion}}<td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>{{end}}
-                        <td>{{if $subscription.Note}}<span title="{{$subscription.Note}}"><i class="sticky note icon"></i></span>{{else}}-{{end}}</td>
                         <td>
                             {{if $subscription.Manual}}
                             <div class="ui mini icon buttons">

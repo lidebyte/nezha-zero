@@ -154,8 +154,8 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         <th>{{tr "SubscriptionEndDate"}}</th>
                         <th>{{tr "RemainingDays"}}</th>
                         <th>{{tr "Price"}}</th>
-                        <th>{{tr "PriceUnit"}}</th>
                         <th>{{tr "Currency"}}</th>
+                        <th>{{tr "PriceUnit"}}</th>
                         {{if $.Conf.EnableCurrencyConversion}}<th>{{tr "ConvertedPrice"}}</th>{{end}}
                         <th>{{tr "Administration"}}</th>
                     </tr>
@@ -171,8 +171,8 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         <td>{{if $subscription.EndDate}}{{$subscription.EndDate}}{{else}}-{{end}}</td>
                         <td class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if $subscription.Lifetime}}subscription-days-lifetime{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if $subscription.Lifetime}}{{tr "Lifetime"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Price}}{{$subscription.Price}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
-                        <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         {{if $.Conf.EnableCurrencyConversion}}<td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>{{end}}
                         <td>
                             <div class="ui mini icon buttons">
@@ -213,26 +213,26 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
             <div class="two fields">
                 <div class="field"><label>{{tr "Price"}}</label><input type="text" name="Price"></div>
                 <div class="field">
-                    <label>{{tr "PriceUnit"}}</label>
-                    <select name="PriceUnit" class="ui fluid dropdown">
-                        <option value="月">{{tr "PNECycleMonthly"}}</option>
-                        <option value="季度">{{tr "PNECycleQuarterly"}}</option>
-                        <option value="半年">{{tr "PNECycleHalfYear"}}</option>
-                        <option value="年">{{tr "PNECycleYearly"}}</option>
-                        <option value="两年">{{tr "BillingCycleTwoYears"}}</option>
-                        <option value="三年">{{tr "BillingCycleThreeYears"}}</option>
-                        <option value="五年">{{tr "BillingCycleFiveYears"}}</option>
-                        <option value="永续">{{tr "PNELifetime"}}</option>
+                    <label>{{tr "Currency"}}</label>
+                    <select name="Currency" class="ui fluid dropdown currency-priority-dropdown">
+                        {{range .Currencies}}{{if eq .Code "CNY"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                        {{range .Currencies}}{{if eq .Code "USD"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                        {{range .Currencies}}{{if eq .Code "EUR"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                        {{range .Currencies}}{{if and (ne .Code "CNY") (ne .Code "USD") (ne .Code "EUR")}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
                     </select>
                 </div>
             </div>
             <div class="field">
-                <label>{{tr "Currency"}}</label>
-                <select name="Currency" class="ui fluid dropdown currency-priority-dropdown">
-                    {{range .Currencies}}{{if eq .Code "CNY"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
-                    {{range .Currencies}}{{if eq .Code "USD"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
-                    {{range .Currencies}}{{if eq .Code "EUR"}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
-                    {{range .Currencies}}{{if and (ne .Code "CNY") (ne .Code "USD") (ne .Code "EUR")}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
+                <label>{{tr "PriceUnit"}}</label>
+                <select name="PriceUnit" class="ui fluid dropdown">
+                    <option value="月">{{tr "PNECycleMonthly"}}</option>
+                    <option value="季度">{{tr "PNECycleQuarterly"}}</option>
+                    <option value="半年">{{tr "PNECycleHalfYear"}}</option>
+                    <option value="年">{{tr "PNECycleYearly"}}</option>
+                    <option value="两年">{{tr "BillingCycleTwoYears"}}</option>
+                    <option value="三年">{{tr "BillingCycleThreeYears"}}</option>
+                    <option value="五年">{{tr "BillingCycleFiveYears"}}</option>
+                    <option value="永续">{{tr "PNELifetime"}}</option>
                 </select>
             </div>
             <div class="field subscription-link-field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
@@ -300,7 +300,7 @@ function lockServerSubscriptionForm(form) {
     lockedFields.find('input[type=checkbox], select, button').prop('disabled', true);
     lockedFields.find('.ui.dropdown').addClass('disabled');
     form.find('.pne-wheel-date').addClass('is-disabled');
-    form.find('[name=Link]').prop('disabled', false).prop('readonly', false).attr('placeholder', '');
+    form.find('[name=Link]').prop('disabled', false).prop('readonly', false);
 }
 function applySubscriptionFormMode(form, serverRow) {
     resetSubscriptionForm(form);

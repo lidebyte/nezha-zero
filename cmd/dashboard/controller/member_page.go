@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -64,15 +65,51 @@ type subscriptionView struct {
 	Note           string
 	Group          string
 	Manual         bool
+	Server         bool
+	AutoRenewal    bool
 	Enabled        bool
-	EditData       template.JS
 }
 
 func subscriptionDate(value time.Time) string {
 	if value.IsZero() {
-		return "-"
+		return ""
 	}
 	return value.Format("2006-01-02")
+}
+
+func subscriptionFormCycle(cycle string, lifetime bool) string {
+	if lifetime || model.IsLifetimeSubscriptionCycle(cycle) {
+		return "永续"
+	}
+	if canonical := model.CanonicalSubscriptionCycle(cycle); canonical != "" {
+		return canonical
+	}
+	return strings.TrimSpace(cycle)
+}
+
+func (row subscriptionView) FormData() template.JS {
+	data, _ := json.Marshal(struct {
+		ID          uint64 `json:"ID"`
+		Server      bool   `json:"Server"`
+		Name        string `json:"Name"`
+		StartDate   string `json:"StartDate"`
+		EndDate     string `json:"EndDate"`
+		Price       string `json:"Price"`
+		PriceUnit   string `json:"PriceUnit"`
+		Currency    string `json:"Currency"`
+		Link        string `json:"Link"`
+		Note        string `json:"Note"`
+		Group       string `json:"Group"`
+		AutoRenewal bool   `json:"AutoRenewal"`
+		Enable      bool   `json:"Enable"`
+	}{
+		ID: row.ID, Server: row.Server, Name: row.Name,
+		StartDate: row.StartDate, EndDate: row.EndDate,
+		Price: row.Price, PriceUnit: row.PriceUnit, Currency: row.Currency,
+		Link: row.Link, Note: row.Note, Group: row.Group,
+		AutoRenewal: row.AutoRenewal, Enable: row.Enabled,
+	})
+	return template.JS(data)
 }
 
 func (mp *memberPage) subscription(c *gin.Context) {
@@ -175,6 +212,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		}
 		rows = append(rows, subscriptionView{
 			ID:             item.ServerID,
+			Server:         true,
 			Name:           item.Name,
 			StartDate:      subscriptionDate(item.StartDate),
 			EndDate:        subscriptionDate(item.EndDate),
@@ -182,7 +220,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			HasEndDate:     !item.EndDate.IsZero(),
 			Lifetime:       item.Lifetime,
 			Price:          item.Price,
-			PriceUnit:      item.PriceUnit,
+			PriceUnit:      subscriptionFormCycle(item.PriceUnit, item.Lifetime),
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
 			Currency:       item.Currency,
 			ConvertedPrice: convertPrice(item.Price, item.Currency),
@@ -191,7 +229,10 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			CostCurrency:   costCurrency,
 			HasCost:        hasCost,
 			CostReason:     costReason,
+			Link:           normalizeSubscriptionLink(server.Link),
+			Note:           server.Note,
 			Group:          item.Group,
+			AutoRenewal:    item.AutoRenewal,
 			Enabled:        true,
 		})
 	}
@@ -210,6 +251,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		if item.Disabled || (!item.EndDate.IsZero() && remainingDays < 0) {
 			costReason = ""
 		}
+		lifetime := model.IsLifetimeSubscriptionCycle(item.PriceUnit)
 		rows = append(rows, subscriptionView{
 			ID:             item.ID,
 			Name:           item.Name,
@@ -217,9 +259,9 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			EndDate:        subscriptionDate(item.EndDate),
 			RemainingDays:  remainingDays,
 			HasEndDate:     !item.EndDate.IsZero(),
-			Lifetime:       model.IsLifetimeSubscriptionCycle(item.PriceUnit),
+			Lifetime:       lifetime,
 			Price:          item.Price,
-			PriceUnit:      item.PriceUnit,
+			PriceUnit:      subscriptionFormCycle(item.PriceUnit, lifetime),
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
 			Currency:       currency,
 			ConvertedPrice: convertPrice(item.Price, currency),
@@ -232,8 +274,8 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			Note:           item.Note,
 			Group:          item.Group,
 			Manual:         true,
+			AutoRenewal:    item.AutoRenewalEnabled(),
 			Enabled:        !item.Disabled,
-			EditData:       item.MarshalForDashboard(),
 		})
 	}
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/subscription", mygin.CommonEnvironment(c, gin.H{

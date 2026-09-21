@@ -1195,6 +1195,9 @@ other = "Activar gestión de suscripciones"
 [AddSubscription]
 other = "Añadir suscripción"
 
+[EditSubscription]
+other = "Editar suscripción"
+
 [DeleteSubscription]
 other = "Eliminar suscripción"
 
@@ -1218,6 +1221,9 @@ other = "Todos los grupos"
 
 [SubscriptionIDHint]
 other = "Los ID que empiezan por S se sincronizan desde la información del servidor. Edítalos en la página Servidores."
+
+[ServerSubscriptionEditHint]
+other = "Esta suscripción se sincroniza desde la gestión de servidores. Edita la facturación en la página Servidores."
 
 [MonthlySubscriptionCost]
 other = "Coste mensual de suscripciones"

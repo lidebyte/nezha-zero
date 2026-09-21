@@ -56,7 +56,7 @@ func TestParseServerSubscription(t *testing.T) {
 	if got.PriceUnit != "月" {
 		t.Fatalf("unexpected price unit: %q", got.PriceUnit)
 	}
-	if got.Currency != "USD" {
+	if got.Currency != "USD" || !got.AutoRenewal {
 		t.Fatalf("unexpected currency: %q", got.Currency)
 	}
 

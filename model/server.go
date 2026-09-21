@@ -22,6 +22,7 @@ type Server struct {
 	Secret       string   `gorm:"uniqueIndex" json:"-"`
 	Note         string   `json:"-"`                    // 管理员可见备注
 	PublicNote   string   `json:"PublicNote,omitempty"` // 公开备注
+	Link         string   `json:"-"`                    // 订阅页跳转链接，不进入公开状态
 	DisplayIndex int      // 展示排序，越大越靠前
 	HideForGuest bool     // 对游客隐藏
 	EnableDDNS   bool     // 启用DDNS
@@ -153,5 +154,6 @@ func (s Server) MarshalForDashboard() template.JS {
 	secret, _ := utils.Json.Marshal(s.Secret)
 	ddnsProfilesRaw, _ := utils.Json.Marshal(s.DDNSProfilesRaw)
 	publicNote, _ := utils.Json.Marshal(s.PublicNote)
-	return template.JS(fmt.Sprintf(`{"ID":%d,"Name":%s,"Secret":%s,"DisplayIndex":%d,"Tag":%s,"Note":%s,"HideForGuest": %s,"EnableDDNS": %s,"DDNSProfilesRaw": %s,"PublicNote": %s}`, s.ID, name, secret, s.DisplayIndex, tag, note, boolToString(s.HideForGuest), boolToString(s.EnableDDNS), ddnsProfilesRaw, publicNote))
+	link, _ := utils.Json.Marshal(s.Link)
+	return template.JS(fmt.Sprintf(`{"ID":%d,"Name":%s,"Secret":%s,"DisplayIndex":%d,"Tag":%s,"Note":%s,"HideForGuest": %s,"EnableDDNS": %s,"DDNSProfilesRaw": %s,"PublicNote": %s,"Link": %s}`, s.ID, name, secret, s.DisplayIndex, tag, note, boolToString(s.HideForGuest), boolToString(s.EnableDDNS), ddnsProfilesRaw, publicNote, link))
 }

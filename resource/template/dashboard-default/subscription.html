@@ -80,6 +80,34 @@
 html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"] {
     border-bottom-color: rgba(255, 255, 255, 0.18) !important;
 }
+.server-subscription-hint {
+    display: none;
+    font-size: 1.05em;
+    vertical-align: -0.08em;
+}
+#subscriptionForm.server-locked .field:not(.subscription-link-field) > label,
+#subscriptionForm.server-locked .field:not(.subscription-link-field) .ui.checkbox label {
+    opacity: 1;
+    color: #000;
+}
+html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-link-field) > label,
+html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-link-field) .ui.checkbox label {
+    color: unset;
+}
+#subscriptionForm.server-locked .field:not(.subscription-link-field) input:not([type="hidden"]),
+#subscriptionForm.server-locked .field:not(.subscription-link-field) textarea,
+#subscriptionForm.server-locked .field:not(.subscription-link-field) .ui.dropdown,
+#subscriptionForm.server-locked .field:not(.subscription-link-field) .pne-wheel-date {
+    pointer-events: none !important;
+    opacity: .45;
+}
+#subscriptionForm.server-locked .ui.checkbox {
+    pointer-events: none;
+}
+#subscriptionForm.server-locked .ui.checkbox label:before,
+#subscriptionForm.server-locked .ui.checkbox label:after {
+    opacity: .45;
+}
 @media only screen and (max-width: 767px) {
     .subscription-summary {
         flex-wrap: wrap;
@@ -139,21 +167,21 @@ html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"
                         <td>{{if $subscription.Manual}}{{$subscription.ID}}{{else}}S{{$subscription.ID}}{{end}}</td>
                         <td>{{$subscription.Name}}</td>
                         <td>{{$subscription.Group}}</td>
-                        <td>{{$subscription.StartDate}}</td>
-                        <td>{{$subscription.EndDate}}</td>
+                        <td>{{if $subscription.StartDate}}{{$subscription.StartDate}}{{else}}-{{end}}</td>
+                        <td>{{if $subscription.EndDate}}{{$subscription.EndDate}}{{else}}-{{end}}</td>
                         <td class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if $subscription.Lifetime}}subscription-days-lifetime{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if $subscription.Lifetime}}{{tr "Lifetime"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Price}}{{$subscription.Price}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
                         <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
                         {{if $.Conf.EnableCurrencyConversion}}<td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>{{end}}
                         <td>
-                            {{if $subscription.Manual}}
                             <div class="ui mini icon buttons">
                                 {{if $subscription.Link}}<a class="ui button" href="{{$subscription.Link}}" target="_blank" rel="noopener noreferrer" title="{{tr "OpenLink"}}"><i class="linkify icon"></i></a>{{end}}
-                                <button class="ui button" onclick="addOrEditSubscription({{$subscription.EditData}})"><i class="edit icon"></i></button>
+                                <button type="button" class="ui button" onclick="addOrEditSubscription({{$subscription.FormData}})"><i class="edit icon"></i></button>
+                                {{if $subscription.Manual}}
                                 <button class="ui button" onclick="showConfirm('{{tr "DeleteSubscription"}}','{{tr "ConfirmDeleteSubscription"}}',deleteRequest,'/api/subscription/'+{{$subscription.ID}})"><i class="trash alternate outline icon"></i></button>
+                                {{end}}
                             </div>
-                            {{else}}-{{end}}
                         </td>
                     </tr>
                     {{end}}
@@ -167,7 +195,8 @@ html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"
     <div class="content">
         <form id="subscriptionForm" class="ui form">
             <input type="hidden" name="ID">
-            <div class="field"><label>{{tr "Name"}}</label><input type="text" name="Name" required></div>
+            <input type="hidden" name="Server" value="0">
+            <div class="field"><label>{{tr "Name"}} <span class="subscription-id-hint server-subscription-hint" data-tooltip="{{tr "ServerSubscriptionEditHint"}}" data-position="top left"><i class="question circle outline icon"></i></span></label><input type="text" name="Name" required></div>
             <div class="field"><label>{{tr "SubscriptionGroup"}}</label><input type="text" name="Group" value="Default"></div>
             <div class="two fields">
                 <div class="field pne-date-row">
@@ -206,7 +235,7 @@ html[nz-theme='dark'] .currency-priority-dropdown .menu > .item[data-value="EUR"
                     {{range .Currencies}}{{if and (ne .Code "CNY") (ne .Code "USD") (ne .Code "EUR")}}<option value="{{.Code}}">{{.Code}} - {{.Name}}</option>{{end}}{{end}}
                 </select>
             </div>
-            <div class="field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
+            <div class="field subscription-link-field"><label>{{tr "Link"}}</label><input type="text" name="Link" placeholder="example.com"></div>
             <div class="field"><label>{{tr "Note"}}</label><textarea name="Note"></textarea></div>
             <div class="field">
                 <div class="ui checkbox subscription-auto-renewal">
@@ -245,7 +274,8 @@ function subscriptionFormData() {
         Link: form.find('[name=Link]').val().trim(),
         Note: form.find('[name=Note]').val().trim(),
         AutoRenewal: form.find('[name=AutoRenewal]').is(':checked') ? 'on' : 'off',
-        Enable: form.find('[name=Enable]').is(':checked') ? 'on' : 'off'
+        Enable: form.find('[name=Enable]').is(':checked') ? 'on' : 'off',
+        Server: form.find('[name=Server]').val() === '1'
     };
 }
 function subscriptionCurrencyDropdown(form) {
@@ -255,9 +285,33 @@ function subscriptionCurrencyDropdown(form) {
     dropdown.addClass('currency-priority-dropdown');
     return dropdown.length ? dropdown : select;
 }
+function resetSubscriptionForm(form) {
+    form.removeClass('server-locked');
+    form.find('.server-subscription-hint').css('display', 'none');
+    form.find('.field, .ui.dropdown, .ui.checkbox, .pne-wheel-date').removeClass('disabled is-disabled');
+    form.find('input, textarea, select, button').prop('disabled', false).prop('readonly', false);
+    form.find('[name=Link]').attr('placeholder', 'example.com');
+}
+function lockServerSubscriptionForm(form) {
+    form.addClass('server-locked');
+    form.find('.server-subscription-hint').css('display', 'inline');
+    const lockedFields = form.find('.field').not('.subscription-link-field');
+    lockedFields.find('input:not([type=hidden]):not([type=checkbox]), textarea').prop('readonly', true);
+    lockedFields.find('input[type=checkbox], select, button').prop('disabled', true);
+    lockedFields.find('.ui.dropdown').addClass('disabled');
+    form.find('.pne-wheel-date').addClass('is-disabled');
+    form.find('[name=Link]').prop('disabled', false).prop('readonly', false).attr('placeholder', '');
+}
+function applySubscriptionFormMode(form, serverRow) {
+    resetSubscriptionForm(form);
+    if (serverRow) lockServerSubscriptionForm(form);
+}
 function addOrEditSubscription(subscription) {
     const form = $('#subscriptionForm');
     const current = subscription || {};
+    const serverRow = current.Server === true;
+    form.find('[name=Server]').val(serverRow ? '1' : '0');
+    form.closest('.subscription.modal').children('.header').text(subscription ? '{{tr "EditSubscription"}}' : '{{tr "AddSubscription"}}');
     form.find('[name=ID]').val(current.ID || 0);
     form.find('[name=Name]').val(current.Name || '');
     form.find('[name=StartDate]').val(current.StartDate || '');
@@ -267,7 +321,7 @@ function addOrEditSubscription(subscription) {
     form.find('[name=Price]').val(current.Price || '');
     form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '年');
     subscriptionCurrencyDropdown(form).dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
-    form.find('[name=Group]').val(current.Group || 'Default');
+    form.find('[name=Group]').val(serverRow ? (current.Group || 'Servers') : (current.Group || 'Default'));
     form.find('[name=Link]').val(current.Link || '');
     form.find('[name=Note]').val(current.Note || '');
     const autoRenewalCheckbox = form.find('.subscription-auto-renewal.checkbox');
@@ -276,8 +330,10 @@ function addOrEditSubscription(subscription) {
     const enableCheckbox = form.find('.subscription-enable.checkbox');
     enableCheckbox.checkbox();
     enableCheckbox.checkbox(!subscription || current.Enable ? 'set checked' : 'set unchecked');
+    applySubscriptionFormMode(form, serverRow);
     showFormModal('.subscription.modal', '#subscriptionForm', '/api/subscription', subscriptionFormData, null, function () {
         NezhaDateWheel.init(form.closest('.subscription.modal'));
+        applySubscriptionFormMode(form, serverRow);
     });
 }
 const subscriptionCheckboxes = document.querySelectorAll('input.nezha-subscriptions[type=checkbox]');

@@ -372,6 +372,7 @@ type subscriptionForm struct {
 	Group       string
 	AutoRenewal string
 	Enable      string
+	Server      bool
 }
 
 func parseOptionalSubscriptionDate(value string) (time.Time, error) {
@@ -405,6 +406,10 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 	var form subscriptionForm
 	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("请求错误：%s", err)})
+		return
+	}
+	if form.Server {
+		ma.updateServerSubscriptionLink(c, form)
 		return
 	}
 	form.Name = strings.TrimSpace(form.Name)
@@ -470,6 +475,30 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("请求错误：%s", err)})
+}
+
+func (ma *memberAPI) updateServerSubscriptionLink(c *gin.Context, form subscriptionForm) {
+	if form.ID == 0 {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "缺少服务器 ID"})
+		return
+	}
+	var server model.Server
+	if err := singleton.DB.First(&server, form.ID).Error; err != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "服务器不存在"})
+		return
+	}
+	link := normalizeSubscriptionLink(form.Link)
+	if err := singleton.DB.Model(&server).Updates(map[string]any{"link": link}).Error; err != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("数据库错误：%s", err)})
+		return
+	}
+	singleton.ServerLock.Lock()
+	if running := singleton.ServerList[server.ID]; running != nil {
+		running.Link = link
+	}
+	singleton.ServerLock.Unlock()
+	audit.Record(c, audit.TypeConfig, "Server link updated", fmt.Sprintf("server: %s (ID %d)", server.Name, server.ID))
+	c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
 }
 
 func (ma *memberAPI) refreshCurrencyRates(c *gin.Context) {
@@ -564,6 +593,7 @@ type serverForm struct {
 	Tag             string
 	Note            string
 	PublicNote      string
+	Link            string
 	HideForGuest    string
 	EnableDDNS      string
 	DDNSProfilesRaw string
@@ -587,6 +617,7 @@ func (ma *memberAPI) addOrEditServer(c *gin.Context) {
 		s.Tag = sf.Tag
 		s.Note = sf.Note
 		s.PublicNote = sf.PublicNote
+		s.Link = normalizeSubscriptionLink(sf.Link)
 		s.HideForGuest = sf.HideForGuest == "on"
 		s.EnableDDNS = sf.EnableDDNS == "on"
 		s.DDNSProfilesRaw = sf.DDNSProfilesRaw

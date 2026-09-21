@@ -345,15 +345,16 @@ func (s Subscription) MarshalForDashboard() template.JS {
 }
 
 type ServerSubscription struct {
-	ServerID  uint64
-	Name      string
-	StartDate time.Time
-	EndDate   time.Time
-	Lifetime  bool
-	Price     string
-	PriceUnit string
-	Currency  string
-	Group     string
+	ServerID    uint64
+	Name        string
+	StartDate   time.Time
+	EndDate     time.Time
+	Lifetime    bool
+	Price       string
+	PriceUnit   string
+	Currency    string
+	Group       string
+	AutoRenewal bool
 }
 
 // ParseServerSubscription reads billing data from the existing server row.
@@ -383,6 +384,7 @@ func ParseServerSubscription(server *Server, now time.Time) ServerSubscription {
 	result.Price = rawSubscriptionValue(note.BillingDataMod.Amount)
 	result.PriceUnit = strings.TrimSpace(note.BillingDataMod.Cycle)
 	result.Currency = DetectCurrency(result.Price)
+	result.AutoRenewal = subscriptionAutoRenewal(note.BillingDataMod.AutoRenewal)
 
 	if result.EndDate.IsZero() || !subscriptionAutoRenewal(note.BillingDataMod.AutoRenewal) {
 		return result
@@ -475,6 +477,30 @@ func subscriptionAutoRenewal(raw json.RawMessage) bool {
 func IsLifetimeSubscriptionCycle(value string) bool {
 	value = strings.ToLower(strings.TrimSpace(value))
 	return value == "永续" || value == "永久" || value == "lifetime"
+}
+
+// CanonicalSubscriptionCycle maps a billing cycle onto the subscription form's option values.
+func CanonicalSubscriptionCycle(cycle string) string {
+	switch SubscriptionCycleMonths(cycle) {
+	case 1:
+		return "月"
+	case 3:
+		return "季度"
+	case 6:
+		return "半年"
+	case 12:
+		return "年"
+	case 24:
+		return "两年"
+	case 36:
+		return "三年"
+	case 60:
+		return "五年"
+	}
+	if IsLifetimeSubscriptionCycle(cycle) {
+		return "永续"
+	}
+	return strings.TrimSpace(cycle)
 }
 
 func SubscriptionCycleMonths(cycle string) int {

@@ -1204,6 +1204,9 @@ other = "Enable subscription management"
 [AddSubscription]
 other = "Add Subscription"
 
+[EditSubscription]
+other = "Edit Subscription"
+
 [DeleteSubscription]
 other = "Delete Subscription"
 
@@ -1227,6 +1230,9 @@ other = "All groups"
 
 [SubscriptionIDHint]
 other = "IDs beginning with S are synchronized from server information. Edit them on the Servers page."
+
+[ServerSubscriptionEditHint]
+other = "This subscription is synced from server management. Edit billing details on the Servers page."
 
 [MonthlySubscriptionCost]
 other = "Monthly subscription cost"

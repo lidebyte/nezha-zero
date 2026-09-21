@@ -1203,6 +1203,9 @@ other = "启用订阅管理"
 [AddSubscription]
 other = "新增订阅"
 
+[EditSubscription]
+other = "修改订阅"
+
 [DeleteSubscription]
 other = "删除订阅"
 
@@ -1226,6 +1229,9 @@ other = "全部分组"
 
 [SubscriptionIDHint]
 other = "以 S 开头的 ID 表示该订阅从服务器信息同步，相关内容需要前往“服务器”页面修改。"
+
+[ServerSubscriptionEditHint]
+other = "该订阅是从服务器管理同步，账单信息请到服务器页面编辑。"
 
 [MonthlySubscriptionCost]
 other = "月度订阅费用"

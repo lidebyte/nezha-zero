@@ -88,6 +88,11 @@ function postJson(url, data) {
 
 function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible) {
   const $modal = $(modelSelector);
+  $modal.data("modal-url", URL);
+  $modal.data("modal-form-id", formID);
+  $modal.data("modal-get-data", getData || null);
+  $modal.data("modal-on-success", onSuccess || null);
+  $modal.data("modal-on-visible", onVisible || null);
 
   // 初始化 modal 一次
   if (!$modal.data("modal-initialized")) {
@@ -141,7 +146,8 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible
       },
 
       onVisible: function () {
-        if (onVisible) onVisible();
+        const visible = $modal.data("modal-on-visible");
+        if (visible) visible();
       },
 
       onApprove: function () {
@@ -153,9 +159,11 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible
         }
         form.children(".message").remove();
         btn.toggleClass("loading");
-        const data = getData
-          ? getData()
-          : $(formID)
+        const readForm = $modal.data("modal-get-data");
+        const formSelector = $modal.data("modal-form-id");
+        const data = readForm
+          ? readForm()
+          : $(formSelector)
             .serializeArray()
             .reduce(function (obj, item) {
               // ID 类的数据
@@ -219,11 +227,12 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible
 
               return obj;
             }, {});
-        $.post(URL, JSON.stringify(data))
+        $.post($modal.data("modal-url"), JSON.stringify(data))
           .done(function (resp) {
             if (resp.code == 200) {
-              if (onSuccess) {
-                onSuccess(resp);
+              const successCb = $modal.data("modal-on-success");
+              if (successCb) {
+                successCb(resp);
               } else {
                 window.location.reload()
               }
@@ -721,6 +730,7 @@ function addOrEditServer(server, conf) {
     .val(server ? server.DisplayIndex : null);
   modal.find("textarea[name=Note]").val(server ? server.Note : null);
   modal.find("textarea[name=PublicNote]").val(server ? server.PublicNote : null);
+  modal.find("input[name=Link]").val(server ? server.Link || "" : "");
   if (server) {
     modal.find(".secret.field").attr("style", "");
     modal.find(".command.field").attr("style", "");

@@ -73,7 +73,7 @@ var Currencies = []Currency{
 	{Code: "CDF", Name: "Congolese Franc"},
 	{Code: "CHF", Name: "Swiss Franc"},
 	{Code: "CLP", Name: "Chilean Peso"},
-	{Code: "CNY", Name: "Yuan Renminbi"},
+	{Code: "CNY", Name: "Chinese Yuan"},
 	{Code: "COP", Name: "Colombian Peso"},
 	{Code: "CRC", Name: "Costa Rican Colon"},
 	{Code: "CUP", Name: "Cuban Peso"},

@@ -176,8 +176,8 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         {{if $.Conf.EnableCurrencyConversion}}<td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>{{end}}
                         <td>
                             <div class="ui mini icon buttons">
-                                {{if $subscription.Link}}<a class="ui button" href="{{$subscription.Link}}" target="_blank" rel="noopener noreferrer" title="{{tr "OpenLink"}}"><i class="linkify icon"></i></a>{{end}}
                                 <button type="button" class="ui button" onclick="addOrEditSubscription({{$subscription.FormData}})"><i class="edit icon"></i></button>
+                                {{if $subscription.Link}}<a class="ui button" href="{{$subscription.Link}}" target="_blank" rel="noopener noreferrer" title="{{tr "OpenLink"}}"><i class="linkify icon"></i></a>{{end}}
                                 {{if $subscription.Manual}}
                                 <button class="ui button" onclick="showConfirm('{{tr "DeleteSubscription"}}','{{tr "ConfirmDeleteSubscription"}}',deleteRequest,'/api/subscription/'+{{$subscription.ID}})"><i class="trash alternate outline icon"></i></button>
                                 {{end}}

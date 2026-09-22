@@ -35,6 +35,26 @@
 .subscription-group-filter.active > .filter.icon {
     color: rgba(0,0,0,.38);
 }
+.subscription-remaining-header {
+    cursor: pointer;
+}
+.subscription-remaining-sort {
+    margin-left: .2rem;
+    cursor: pointer;
+}
+.subscription-remaining-sort > .icon {
+    margin: 0 !important;
+    color: rgba(0,0,0,.22);
+    font-size: .58em;
+    opacity: 1;
+    transition: color .15s ease;
+}
+.subscription-remaining-header:hover .subscription-remaining-sort > .icon {
+    color: rgba(0,0,0,.3);
+}
+.subscription-remaining-sort.active > .icon {
+    color: rgba(0,0,0,.58);
+}
 .subscription-days-warning {
     color: #fed12c;
     font-weight: 600;
@@ -162,7 +182,10 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         </th>
                         <th>{{tr "SubscriptionStartDate"}}</th>
                         <th>{{tr "SubscriptionEndDate"}}</th>
-                        <th>{{tr "RemainingDays"}}</th>
+                        <th class="subscription-remaining-header">
+                            {{tr "RemainingDays"}}
+                            <span id="subscriptionRemainingSort" class="subscription-remaining-sort" title="{{tr "SortByRemainingDays"}}" role="button" tabindex="0" aria-pressed="false"><i class="sort amount down icon"></i></span>
+                        </th>
                         <th>{{tr "Price"}}</th>
                         <th>{{tr "Currency"}}</th>
                         <th>{{tr "PriceUnit"}}</th>
@@ -173,7 +196,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                 </thead>
                 <tbody>
                     {{range $subscription := .Subscriptions}}
-                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}">
+                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}">
                         <td class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
                         <td>{{if $subscription.Manual}}{{$subscription.ID}}{{else}}S{{$subscription.ID}}{{end}}</td>
                         <td>{{$subscription.Name}}</td>
@@ -358,6 +381,45 @@ function checkAllSubscriptions() {
 }
 
 const subscriptionRows = Array.from(document.querySelectorAll('tr.subscription-row'));
+const subscriptionRowOriginalIndexes = new Map(subscriptionRows.map(function (row, index) {
+    return [row, index];
+}));
+const subscriptionRemainingSort = document.getElementById('subscriptionRemainingSort');
+let subscriptionRemainingSortActive = false;
+
+function subscriptionRemainingSortKey(row) {
+    const enabled = row.dataset.enabled === '1';
+    const lifetime = row.dataset.lifetime === '1';
+    const hasEnd = row.dataset.hasEnd === '1';
+    const remaining = parseInt(row.dataset.remainingDays, 10) || 0;
+    if (enabled && hasEnd && remaining >= 0) return [0, remaining];
+    if (enabled && hasEnd && remaining < 0) return [1, 0];
+    if (enabled && lifetime) return [3, 0];
+    return [2, 0];
+}
+
+function toggleSubscriptionRemainingSort() {
+    subscriptionRemainingSortActive = !subscriptionRemainingSortActive;
+    const rows = subscriptionRemainingSortActive ? subscriptionRows.slice().sort(function (a, b) {
+        const aKey = subscriptionRemainingSortKey(a);
+        const bKey = subscriptionRemainingSortKey(b);
+        if (aKey[0] !== bKey[0]) return aKey[0] - bKey[0];
+        if (aKey[0] === 0 && aKey[1] !== bKey[1]) return aKey[1] - bKey[1];
+        return subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
+    }) : subscriptionRows;
+    const tbody = subscriptionRows.length > 0 ? subscriptionRows[0].parentNode : null;
+    if (tbody) rows.forEach(function (row) { tbody.appendChild(row); });
+    subscriptionRemainingSort.classList.toggle('active', subscriptionRemainingSortActive);
+    subscriptionRemainingSort.setAttribute('aria-pressed', subscriptionRemainingSortActive ? 'true' : 'false');
+}
+
+subscriptionRemainingSort.closest('th').addEventListener('click', toggleSubscriptionRemainingSort);
+subscriptionRemainingSort.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSubscriptionRemainingSort();
+});
 const subscriptionGroups = Array.from(new Set(subscriptionRows.map(function (row) {
     return row.dataset.subscriptionGroup;
 }))).sort(function (a, b) { return a.localeCompare(b); });

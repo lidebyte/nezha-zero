@@ -1213,6 +1213,9 @@ other = "Fecha de fin"
 [RemainingDays]
 other = "Días restantes"
 
+[SortByRemainingDays]
+other = "Ordenar por días restantes"
+
 [SubscriptionGroup]
 other = "Grupo"
 

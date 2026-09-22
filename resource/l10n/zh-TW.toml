@@ -1221,6 +1221,9 @@ other = "訂閱結束時間"
 [RemainingDays]
 other = "剩餘天數"
 
+[SortByRemainingDays]
+other = "按剩餘天數排序"
+
 [SubscriptionGroup]
 other = "分組"
 

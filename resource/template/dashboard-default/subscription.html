@@ -73,6 +73,14 @@
 .subscription-cost-hint > .icon {
     margin: 0 !important;
 }
+.subscription-note {
+    display: inline-block;
+    max-width: 16em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
 .currency-priority-dropdown .menu > .item[data-value="EUR"] {
     margin-bottom: 0.25rem !important;
     border-bottom: 1px solid rgba(34, 36, 38, 0.15) !important;
@@ -117,6 +125,8 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
 </style>
 <div class="nb-container">
     <div class="ui container">
+        {{$hasSubscriptionNotes := false}}
+        {{range $subscription := .Subscriptions}}{{if $subscription.Note}}{{$hasSubscriptionNotes = true}}{{end}}{{end}}
         <div class="ui stackable middle aligned grid">
             <div class="left aligned eight wide column">
                 <div class="subscription-summary">
@@ -157,6 +167,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         <th>{{tr "Currency"}}</th>
                         <th>{{tr "PriceUnit"}}</th>
                         {{if $.Conf.EnableCurrencyConversion}}<th>{{tr "ConvertedPrice"}}</th>{{end}}
+                        {{if $hasSubscriptionNotes}}<th>{{tr "Note"}}</th>{{end}}
                         <th>{{tr "Administration"}}</th>
                     </tr>
                 </thead>
@@ -174,6 +185,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         <td>{{if $subscription.Currency}}{{$subscription.Currency}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         {{if $.Conf.EnableCurrencyConversion}}<td>{{if $subscription.ConvertedPrice}}{{$subscription.ConvertedPrice}}{{else}}-{{end}}</td>{{end}}
+                        {{if $hasSubscriptionNotes}}<td>{{if $subscription.Note}}<span class="subscription-note" title="{{$subscription.Note}}">{{$subscription.Note}}</span>{{else}}-{{end}}</td>{{end}}
                         <td>
                             <div class="ui mini icon buttons">
                                 <button type="button" class="ui button" onclick="addOrEditSubscription({{$subscription.FormData}})"><i class="edit icon"></i></button>

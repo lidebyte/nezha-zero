@@ -247,6 +247,9 @@ other = "Agregar Regla de Notificación"
 [AlertType]
 other = "Tipo de alerta"
 
+[AlertTypeHint]
+other = "Alerta estándar: supervisa el estado del servidor mediante métricas como CPU, memoria o desconexión; Alerta de vencimiento del servidor: avisa con antelación según la fecha de vencimiento de la facturación del servidor; Alerta de vencimiento de suscripción: solo cubre las suscripciones añadidas manualmente en la página de suscripciones y nunca anula ni afecta a las alertas de vencimiento del servidor, ambos tipos de regla funcionan de forma independiente"
+
 [StandardAlert]
 other = "Alerta estándar"
 

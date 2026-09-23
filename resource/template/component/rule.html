@@ -1,11 +1,28 @@
 {{define "component/rule"}}
+<style>
+    .alert-type-hint {
+        margin-left: .2rem;
+        color: rgba(0,0,0,.35);
+        cursor: help;
+        font-size: .72em;
+    }
+    .alert-type-hint > .icon {
+        margin: 0 !important;
+    }
+    /* Semantic UI 属性式气泡默认 white-space:nowrap 不换行，长文案需覆盖为限宽换行 */
+    .alert-type-hint[data-tooltip]:after {
+        white-space: normal;
+        width: max-content;
+        max-width: 22rem;
+    }
+</style>
 <div class="ui tiny rule modal transition hidden">
     <div class="header">{{tr "AddNotificationRule"}}</div>
     <div class="content">
         <form id="ruleForm" class="ui form">
             <input type="hidden" name="ID">
             <div class="field">
-                <label>{{tr "AlertType"}}</label>
+                <label>{{tr "AlertType"}} <span class="alert-type-hint" data-tooltip="{{tr "AlertTypeHint"}}" data-position="top left"><i class="question circle outline icon"></i></span></label>
                 <select name="AlertType" class="ui fluid dropdown" onchange="alertRuleTypeChanged()">
                     <option value="0">{{tr "StandardAlert"}}</option>
                     <option value="1">{{tr "ExpirationAlert"}}</option>

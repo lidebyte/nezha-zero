@@ -247,6 +247,9 @@ other = "Add Notification Rule"
 [AlertType]
 other = "Alert Type"
 
+[AlertTypeHint]
+other = "Standard Alert: monitors server status via metrics such as CPU, memory and offline; Server Expiration Alert: sends reminders ahead of a server's billing expiry date; Subscription Expiration Alert: only covers subscriptions added manually on the Subscriptions page, and never overrides or affects Server Expiration Alerts, both rule types run independently"
+
 [StandardAlert]
 other = "Standard Alert"
 

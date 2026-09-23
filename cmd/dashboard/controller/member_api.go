@@ -503,7 +503,7 @@ func (ma *memberAPI) updateServerSubscriptionLink(c *gin.Context, form subscript
 
 func (ma *memberAPI) refreshCurrencyRates(c *gin.Context) {
 	if err := singleton.RefreshCurrencyRates(); err != nil {
-		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: err.Error()})
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "Refresh rates err"})
 		return
 	}
 	audit.Record(c, audit.TypeConfig, "Currency rates refreshed", fmt.Sprintf("provider: %s", singleton.Conf.CurrencyProvider))

@@ -1276,6 +1276,15 @@ other = "Precio convertido"
 [EnableCurrencyConversion]
 other = "Activar conversión de moneda"
 
+[ShowMonthlyPrice]
+other = "Mostrar precio mensual"
+
+[ShowMonthlyPriceHint]
+other = "Al activarlo, los precios de la lista de suscripciones se convierten a su equivalente mensual según el ciclo de pago (p. ej., el precio anual dividido entre 12), el precio convertido se prorratea igualmente y las suscripciones permanentes muestran el precio original."
+
+[MonthlyPriceColumnHint]
+other = "Los precios se convierten a su equivalente mensual según el ciclo de pago; las suscripciones permanentes muestran el precio original"
+
 [CurrencyProvider]
 other = "Proveedor de tipos de cambio"
 

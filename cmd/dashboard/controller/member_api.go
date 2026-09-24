@@ -1506,6 +1506,7 @@ type settingForm struct {
 	UseTemplateHandleNoRoute        string
 	EnableSubscription              string
 	EnableCurrencyConversion        string
+	ShowMonthlyPrice                string
 	CurrencyProvider                string
 	CurrencyAPIKey                  string
 	BaseCurrency                    string
@@ -1698,6 +1699,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	singleton.Conf.CompatAPIDisable = sf.CompatAPIDisable == "on"
 	singleton.Conf.EnableSubscription = sf.EnableSubscription == "on"
 	singleton.Conf.EnableCurrencyConversion = enableCurrencyConversion
+	singleton.Conf.ShowMonthlyPrice = sf.ShowMonthlyPrice == "on"
 	singleton.Conf.CurrencyProvider = currencyProvider
 	singleton.Conf.CurrencyAPIKey = currencyAPIKey
 	singleton.Conf.BaseCurrency = baseCurrency

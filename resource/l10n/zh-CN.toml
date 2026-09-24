@@ -1284,6 +1284,15 @@ other = "换算价格"
 [EnableCurrencyConversion]
 other = "启用货币换算"
 
+[ShowMonthlyPrice]
+other = "按照月度价格显示"
+
+[ShowMonthlyPriceHint]
+other = "开启后，订阅列表中的价格将按付费周期折算为每月价格（如年付价格除以 12），换算价格同步折算，永续订阅仍显示原始价格。"
+
+[MonthlyPriceColumnHint]
+other = "价格已按付费周期折算为每月价格，永续订阅显示原始价格"
+
 [CurrencyProvider]
 other = "汇率服务商"
 

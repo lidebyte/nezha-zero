@@ -51,11 +51,14 @@ type subscriptionView struct {
 	RemainingDays  int
 	HasEndDate     bool
 	Lifetime       bool
-	Price          string
+	Price          string // 原始存储价格，用于编辑表单回填
+	Currency       string // 原始存储货币码
+	DisplayAmount  string // 列表展示的金额数值（可能已换算/月度化，无货币码）
+	DisplayUnit    string // 列表展示金额对应的货币码
+	OriginalAmount string // 换算后括号内附带的原始金额数值（无货币码）
+	OriginalUnit   string // 原始金额对应的货币码
 	PriceUnit      string
 	PriceUnitLabel string
-	Currency       string
-	ConvertedPrice string
 	MonthlyCost    float64
 	YearlyCost     float64
 	CostCurrency   string
@@ -119,19 +122,34 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	}
 	now := time.Now()
 	rates, _, _ := singleton.CurrencyRateSnapshot()
-	convertPrice := func(price, currency string) string {
-		if !singleton.Conf.EnableCurrencyConversion || currency == "" {
-			return ""
-		}
+	// convertPrice 对单条订阅计算列表展示价格：
+	// 括号外（主价格）由"按照月度价格显示"和"启用货币换算"决定；
+	// 括号内永远显示原始价格与原货币（不折算），仅在主价格与原价不一致时出现
+	convertPrice := func(price, priceUnit, currency string) (displayAmount, originalAmount, displayUnit string) {
+		currency = strings.ToUpper(strings.TrimSpace(currency))
+		lifetime := model.IsLifetimeSubscriptionCycle(priceUnit)
 		amount, ok := model.ParsePriceAmount(price)
-		if !ok {
-			return ""
+		if !ok || amount == 0 {
+			return "", "", ""
 		}
-		converted, err := model.ConvertCurrency(amount, currency, singleton.Conf.BaseCurrency, rates)
-		if err != nil {
-			return ""
+		divisor := float64(subscriptionPriceDivisor(singleton.Conf.ShowMonthlyPrice, priceUnit))
+		if singleton.Conf.EnableCurrencyConversion && currency != "" {
+			converted, err := model.ConvertCurrency(amount, currency, singleton.Conf.BaseCurrency, rates)
+			if err == nil {
+				displayAmount = formatSubscriptionAmount(converted / divisor)
+				displayUnit = singleton.Conf.BaseCurrency
+			}
 		}
-		return fmt.Sprintf("%.2f %s", converted, singleton.Conf.BaseCurrency)
+		if displayAmount == "" {
+			displayAmount = formatSubscriptionAmount(amount / divisor)
+			displayUnit = currency
+		}
+		// 括号原价：原始金额（不折算），主价格与原价不一致时才显示
+		originalAmount = formatSubscriptionAmount(amount)
+		if lifetime || (displayAmount == originalAmount && displayUnit == currency) {
+			originalAmount = ""
+		}
+		return displayAmount, originalAmount, displayUnit
 	}
 	recurringCost := func(price, priceUnit, currency string) (float64, float64, string, bool, string) {
 		cycle := strings.ToLower(strings.TrimSpace(priceUnit))
@@ -210,6 +228,13 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		if !item.EndDate.IsZero() && remainingDays < 0 {
 			costReason = ""
 		}
+		displayAmount, originalAmount, displayUnit := convertPrice(item.Price, costCycle, item.Currency)
+		if displayAmount == "" {
+			// 无法解析价格时按原文本展示
+			displayAmount = item.Price
+			displayUnit = item.Currency
+			originalAmount = ""
+		}
 		rows = append(rows, subscriptionView{
 			ID:             item.ServerID,
 			Server:         true,
@@ -220,10 +245,13 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			HasEndDate:     !item.EndDate.IsZero(),
 			Lifetime:       item.Lifetime,
 			Price:          item.Price,
+			Currency:       item.Currency,
+			DisplayAmount:  displayAmount,
+			DisplayUnit:    displayUnit,
+			OriginalAmount: originalAmount,
+			OriginalUnit:   item.Currency,
 			PriceUnit:      subscriptionFormCycle(item.PriceUnit, item.Lifetime),
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
-			Currency:       item.Currency,
-			ConvertedPrice: convertPrice(item.Price, item.Currency),
 			MonthlyCost:    monthlyCost,
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,
@@ -252,6 +280,12 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			costReason = ""
 		}
 		lifetime := model.IsLifetimeSubscriptionCycle(item.PriceUnit)
+		displayAmount, originalAmount, displayUnit := convertPrice(item.Price, item.PriceUnit, currency)
+		if displayAmount == "" {
+			displayAmount = item.Price
+			displayUnit = currency
+			originalAmount = ""
+		}
 		rows = append(rows, subscriptionView{
 			ID:             item.ID,
 			Name:           item.Name,
@@ -261,10 +295,13 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			HasEndDate:     !item.EndDate.IsZero(),
 			Lifetime:       lifetime,
 			Price:          item.Price,
+			Currency:       currency,
+			DisplayAmount:  displayAmount,
+			DisplayUnit:    displayUnit,
+			OriginalAmount: originalAmount,
+			OriginalUnit:   currency,
 			PriceUnit:      subscriptionFormCycle(item.PriceUnit, lifetime),
 			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
-			Currency:       currency,
-			ConvertedPrice: convertPrice(item.Price, currency),
 			MonthlyCost:    monthlyCost,
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,
@@ -290,6 +327,42 @@ func subscriptionDateTime(value time.Time) string {
 		return ""
 	}
 	return value.Format("2006-01-02 15:04:05")
+}
+
+// subscriptionPriceDivisor 返回月度折算除数：开启"按照月度价格显示"后，
+// 价格按付费周期月数摊销为每月价格；永续与无法识别的周期不折算
+// （与 Wallos 的 getPricePerMonth 行为一致）
+func subscriptionPriceDivisor(showMonthlyPrice bool, priceUnit string) int {
+	if !showMonthlyPrice {
+		return 1
+	}
+	cycle := strings.ToLower(strings.TrimSpace(priceUnit))
+	if cycle == "" || model.IsLifetimeSubscriptionCycle(cycle) {
+		return 1
+	}
+	if months := model.SubscriptionCycleMonths(cycle); months > 0 {
+		return months
+	}
+	return 1
+}
+
+// formatSubscriptionAmount 把金额按千分位格式化（如 "1,200.00"），不附带货币码
+func formatSubscriptionAmount(amount float64) string {
+	amountText := fmt.Sprintf("%.2f", amount)
+	whole, fraction, _ := strings.Cut(amountText, ".")
+	negative := strings.HasPrefix(whole, "-")
+	whole = strings.TrimPrefix(whole, "-")
+	grouped := ""
+	for i, digit := range whole {
+		if i > 0 && (len(whole)-i)%3 == 0 {
+			grouped += ","
+		}
+		grouped += string(digit)
+	}
+	if negative {
+		grouped = "-" + grouped
+	}
+	return grouped + "." + fraction
 }
 
 func (mp *memberPage) api(c *gin.Context) {

@@ -1285,6 +1285,15 @@ other = "Converted Price"
 [EnableCurrencyConversion]
 other = "Enable currency conversion"
 
+[ShowMonthlyPrice]
+other = "Show monthly price"
+
+[ShowMonthlyPriceHint]
+other = "When enabled, prices in the subscription list are converted to a monthly equivalent based on the payment cycle (e.g. a yearly price divided by 12), the converted price is prorated as well, and lifetime subscriptions keep showing the original price."
+
+[MonthlyPriceColumnHint]
+other = "Prices are converted to a monthly equivalent based on the payment cycle; lifetime subscriptions show the original price"
+
 [CurrencyProvider]
 other = "Exchange Rate Provider"
 

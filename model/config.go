@@ -122,6 +122,7 @@ type Config struct {
 	UseTemplateHandleNoRoute        bool // 用模板处理无路由情况
 	EnableSubscription              bool // 启用订阅管理
 	EnableCurrencyConversion        bool // 启用订阅货币换算
+	ShowMonthlyPrice                bool // 订阅列表按月度价格显示
 	CurrencyProvider                string
 	CurrencyAPIKey                  string
 	BaseCurrency                    string

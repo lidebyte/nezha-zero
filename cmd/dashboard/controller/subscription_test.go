@@ -95,3 +95,49 @@ func TestNormalizeSubscriptionLink(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatSubscriptionAmount(t *testing.T) {
+	tests := []struct {
+		amount float64
+		want   string
+	}{
+		{1200, "1,200.00"},
+		{1234567.8, "1,234,567.80"},
+		{9.9, "9.90"},
+		{0.5, "0.50"},
+		{-12, "-12.00"},
+		{0, "0.00"},
+	}
+	for _, test := range tests {
+		if got := formatSubscriptionAmount(test.amount); got != test.want {
+			t.Errorf("formatSubscriptionAmount(%v) = %q, want %q", test.amount, got, test.want)
+		}
+	}
+}
+
+func TestSubscriptionPriceDivisor(t *testing.T) {
+	tests := []struct {
+		priceUnit string
+		want      int
+	}{
+		{"月", 1},
+		{"季度", 3},
+		{"半年", 6},
+		{"年", 12},
+		{"两年", 24},
+		{"三年", 36},
+		{"五年", 60},
+		{"quarterly", 3},
+		{"永续", 1},
+		{"", 1},
+		{"每周", 1},
+	}
+	for _, test := range tests {
+		if got := subscriptionPriceDivisor(true, test.priceUnit); got != test.want {
+			t.Errorf("subscriptionPriceDivisor(true, %q) = %d, want %d", test.priceUnit, got, test.want)
+		}
+	}
+	if got := subscriptionPriceDivisor(false, "年"); got != 1 {
+		t.Errorf("subscriptionPriceDivisor(false, ...) = %d, want 1", got)
+	}
+}

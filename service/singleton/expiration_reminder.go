@@ -234,20 +234,15 @@ func currencyUsageFromHeader(header http.Header) (used, limit int64, ok bool) {
 	return used, limit, true
 }
 
-func storeCurrencyUsage(provider string, header http.Header, fetchedAt time.Time) error {
+func currencyUsageFromResponse(provider string, header http.Header) (used, limit *int64) {
 	if provider != "apilayer" {
-		return nil
+		return nil, nil
 	}
-	used, limit, ok := currencyUsageFromHeader(header)
+	valueUsed, valueLimit, ok := currencyUsageFromHeader(header)
 	if !ok {
-		return nil
+		return nil, nil
 	}
-	var usage model.CurrencyUsage
-	return DB.Where("provider = ?", provider).Assign(map[string]interface{}{
-		"monthly_used":  used,
-		"monthly_limit": limit,
-		"fetched_at":    fetchedAt,
-	}).FirstOrCreate(&usage, model.CurrencyUsage{Provider: provider}).Error
+	return &valueUsed, &valueLimit
 }
 
 type currencyAPIResponse struct {
@@ -309,9 +304,7 @@ func RefreshCurrencyRates() error {
 		return fmt.Errorf("request currency provider: %w", err)
 	}
 	defer resp.Body.Close()
-	if err := storeCurrencyUsage(Conf.CurrencyProvider, resp.Header, time.Now()); err != nil {
-		log.Printf("NEZHA>> store currency API usage failed: %v", err)
-	}
+	monthlyUsed, monthlyLimit := currencyUsageFromResponse(Conf.CurrencyProvider, resp.Header)
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxCurrencyResponseSize+1))
 	if err != nil {
 		return fmt.Errorf("read currency provider response: %w", err)
@@ -353,56 +346,65 @@ func RefreshCurrencyRates() error {
 	if len(rates) < 2 {
 		return errors.New("currency provider returned insufficient supported rates")
 	}
-	stored := make([]model.CurrencyRate, 0, len(rates))
-	for code, rate := range rates {
-		stored = append(stored, model.CurrencyRate{
-			BaseCode:  base,
-			Code:      code,
-			Rate:      rate,
-			Provider:  Conf.CurrencyProvider,
-			FetchedAt: now,
-		})
+	ratesRaw, err := json.Marshal(rates)
+	if err != nil {
+		return fmt.Errorf("encode currency rates: %w", err)
 	}
-	return DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Unscoped().Where("1 = 1").Delete(&model.CurrencyRate{}).Error; err != nil {
-			return err
-		}
-		return tx.Create(&stored).Error
-	})
+
+	snapshot := model.CurrencySnapshot{
+		ID:           model.CurrentCurrencySnapshotID,
+		BaseCode:     base,
+		Provider:     Conf.CurrencyProvider,
+		RatesRaw:     string(ratesRaw),
+		MonthlyUsed:  monthlyUsed,
+		MonthlyLimit: monthlyLimit,
+		FetchedAt:    now,
+	}
+	return DB.Save(&snapshot).Error
 }
 
 func CurrencyRateSnapshot() (map[string]float64, time.Time, error) {
-	var stored []model.CurrencyRate
-	if err := DB.Order("code").Find(&stored).Error; err != nil {
+	var snapshot model.CurrencySnapshot
+	if err := DB.First(&snapshot, model.CurrentCurrencySnapshotID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return map[string]float64{}, time.Time{}, nil
+		}
 		return nil, time.Time{}, err
 	}
-	rates := make(map[string]float64, len(stored))
-	var fetchedAt time.Time
-	for _, item := range stored {
-		rates[item.Code] = item.Rate
-		if item.FetchedAt.After(fetchedAt) {
-			fetchedAt = item.FetchedAt
-		}
+	if snapshot.Provider != Conf.CurrencyProvider {
+		return map[string]float64{}, time.Time{}, nil
 	}
-	return rates, fetchedAt, nil
+	rates := make(map[string]float64)
+	if err := json.Unmarshal([]byte(snapshot.RatesRaw), &rates); err != nil {
+		return nil, time.Time{}, fmt.Errorf("decode currency rates: %w", err)
+	}
+	return rates, snapshot.FetchedAt, nil
 }
 
-func CurrencyUsageSnapshot() (model.CurrencyUsage, bool, error) {
-	var usage model.CurrencyUsage
+func CurrencyUsageSnapshot() (model.CurrencyUsageStatus, bool, error) {
 	if Conf.CurrencyProvider != "apilayer" {
-		return usage, false, nil
+		return model.CurrencyUsageStatus{}, false, nil
 	}
-	result := DB.Where("provider = ?", Conf.CurrencyProvider).Limit(1).Find(&usage)
-	if result.Error != nil {
-		return usage, false, result.Error
+
+	var snapshot model.CurrencySnapshot
+	if err := DB.First(&snapshot, model.CurrentCurrencySnapshotID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.CurrencyUsageStatus{}, false, nil
+		}
+		return model.CurrencyUsageStatus{}, false, err
 	}
-	if result.RowsAffected == 0 {
-		return usage, false, nil
+	if snapshot.Provider != Conf.CurrencyProvider {
+		return model.CurrencyUsageStatus{}, false, nil
 	}
+
 	now := time.Now()
-	fetchedAt := usage.FetchedAt.In(now.Location())
-	if usage.MonthlyLimit <= 0 || fetchedAt.Year() != now.Year() || fetchedAt.Month() != now.Month() {
-		return usage, false, nil
+	fetchedAt := snapshot.FetchedAt.In(now.Location())
+	if snapshot.MonthlyUsed == nil || snapshot.MonthlyLimit == nil ||
+		*snapshot.MonthlyLimit <= 0 || fetchedAt.Year() != now.Year() || fetchedAt.Month() != now.Month() {
+		return model.CurrencyUsageStatus{}, false, nil
 	}
-	return usage, true, nil
+	return model.CurrencyUsageStatus{
+		MonthlyUsed:  *snapshot.MonthlyUsed,
+		MonthlyLimit: *snapshot.MonthlyLimit,
+	}, true, nil
 }

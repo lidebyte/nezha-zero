@@ -360,20 +360,20 @@ func (ma *memberAPI) searchSubscription(c *gin.Context) {
 }
 
 type subscriptionForm struct {
-	ID          uint64
-	Name        string
-	StartDate   string
-	EndDate     string
-	Price       string
-	PriceUnit   string
-	Currency    string
-	Link        string
+	ID           uint64
+	Name         string
+	StartDate    string
+	EndDate      string
+	Price        string
+	PriceUnit    string
+	Currency     string
+	Link         string
 	DisplayIndex int
-	Note        string
-	Group       string
-	AutoRenewal string
-	Enable      string
-	Server      bool
+	Note         string
+	Group        string
+	AutoRenewal  string
+	Enable       string
+	Server       bool
 }
 
 func parseOptionalSubscriptionDate(value string) (time.Time, error) {
@@ -426,7 +426,7 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 	if form.Currency == "" {
 		form.Currency = singleton.Conf.BaseCurrency
 		if form.Currency == "" {
-			form.Currency = "CNY"
+			form.Currency = "USD"
 		}
 	}
 	if !model.IsSupportedCurrency(form.Currency) {
@@ -443,17 +443,17 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 		if err == nil {
 			autoRenewal := form.AutoRenewal == "on"
 			subscription := model.Subscription{
-				Name:        form.Name,
-				StartDate:   startDate,
-				EndDate:     endDate,
-				Price:       strings.TrimSpace(form.Price),
-				PriceUnit:   strings.TrimSpace(form.PriceUnit),
-				Currency:    form.Currency,
-				Link:        normalizeSubscriptionLink(form.Link),
-				Note:        strings.TrimSpace(form.Note),
-				Group:       form.Group,
-				AutoRenewal: &autoRenewal,
-				Disabled:    form.Enable == "off",
+				Name:         form.Name,
+				StartDate:    startDate,
+				EndDate:      endDate,
+				Price:        strings.TrimSpace(form.Price),
+				PriceUnit:    strings.TrimSpace(form.PriceUnit),
+				Currency:     form.Currency,
+				Link:         normalizeSubscriptionLink(form.Link),
+				Note:         strings.TrimSpace(form.Note),
+				Group:        form.Group,
+				AutoRenewal:  &autoRenewal,
+				Disabled:     form.Enable == "off",
 				DisplayIndex: form.DisplayIndex,
 			}
 			if form.ID == 0 {
@@ -1676,7 +1676,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	if baseCurrency == "" {
 		baseCurrency = oldConf.BaseCurrency
 		if baseCurrency == "" {
-			baseCurrency = "CNY"
+			baseCurrency = "USD"
 		}
 	}
 	if !model.IsSupportedCurrency(baseCurrency) {
@@ -1738,8 +1738,8 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		return
 	}
 	if oldConf.CurrencyProvider != singleton.Conf.CurrencyProvider || oldConf.CurrencyAPIKey != singleton.Conf.CurrencyAPIKey {
-		if err := singleton.DB.Unscoped().Where("1 = 1").Delete(&model.CurrencyUsage{}).Error; err != nil {
-			log.Printf("NEZHA>> clear currency API usage after settings update failed: %v", err)
+		if err := singleton.DB.Delete(&model.CurrencySnapshot{}, model.CurrentCurrencySnapshotID).Error; err != nil {
+			log.Printf("NEZHA>> clear currency snapshot after settings update failed: %v", err)
 		}
 	}
 	if !oldConf.EnableSubscription && singleton.Conf.EnableSubscription {

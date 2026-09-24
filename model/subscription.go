@@ -21,26 +21,25 @@ type Currency struct {
 	Symbol string
 }
 
-// CurrencyRate stores the latest provider snapshot. Configuration such as the
-// provider, API key and display currency remains in Config; runtime rate data
-// belongs in the database.
-type CurrencyRate struct {
-	Common
-	BaseCode  string    `gorm:"size:3;uniqueIndex:idx_currency_rate_base_code"`
-	Code      string    `gorm:"size:3;uniqueIndex:idx_currency_rate_base_code"`
-	Rate      float64   `gorm:"not null"`
-	Provider  string    `gorm:"size:16"`
-	FetchedAt time.Time `gorm:"index"`
+// CurrentCurrencySnapshotID keeps the runtime currency data as a single row.
+const CurrentCurrencySnapshotID uint64 = 1
+
+// CurrencySnapshot stores the latest provider response. Exchange rates and the
+// provider quota are written together because they describe the same fetch.
+type CurrencySnapshot struct {
+	ID           uint64 `gorm:"primaryKey"`
+	BaseCode     string `gorm:"size:3;not null"`
+	Provider     string `gorm:"size:16;not null"`
+	RatesRaw     string `gorm:"not null"`
+	MonthlyUsed  *int64
+	MonthlyLimit *int64
+	FetchedAt    time.Time `gorm:"index;not null"`
 }
 
-// CurrencyUsage stores the monthly quota snapshot reported by a currency
-// provider. It is kept separately from configuration and exchange-rate rows.
-type CurrencyUsage struct {
-	Common
-	Provider     string    `gorm:"size:16;uniqueIndex"`
-	MonthlyUsed  int64     `gorm:"not null"`
-	MonthlyLimit int64     `gorm:"not null"`
-	FetchedAt    time.Time `gorm:"index"`
+// CurrencyUsageStatus is the read-model returned to the settings page.
+type CurrencyUsageStatus struct {
+	MonthlyUsed  int64
+	MonthlyLimit int64
 }
 
 // Currencies contains current ISO 4217 currencies used for ordinary billing.

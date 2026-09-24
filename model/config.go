@@ -259,7 +259,7 @@ func (c *Config) Read(path string) error {
 		c.CurrencyProvider = "fixer"
 	}
 	if c.BaseCurrency == "" || !IsSupportedCurrency(c.BaseCurrency) {
-		c.BaseCurrency = "CNY"
+		c.BaseCurrency = "USD"
 	}
 	if c.Oauth2.OidcScopes == "" {
 		c.Oauth2.OidcScopes = "openid,profile,email"

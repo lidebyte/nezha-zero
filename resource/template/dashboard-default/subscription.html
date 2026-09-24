@@ -205,7 +205,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                     {{range $subscription := .Subscriptions}}
                     <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}">
                         <td class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
-                        <td>{{if $subscription.Manual}}{{$subscription.ID}}{{else}}S{{$subscription.ID}}{{end}}</td>
+                        <td>{{if $subscription.Manual}}{{$subscription.ID}}({{$subscription.DisplayIndex}}){{else}}S{{$subscription.ID}}{{end}}</td>
                         <td>{{$subscription.Name}}</td>
                         <td>{{$subscription.Group}}</td>
                         <td>{{if $subscription.StartDate}}{{$subscription.StartDate}}{{else}}-{{end}}</td>
@@ -238,6 +238,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
             <input type="hidden" name="Server" value="0">
             <div class="field"><label>{{tr "Name"}} <span class="subscription-id-hint server-subscription-hint" data-tooltip="{{tr "ServerSubscriptionEditHint"}}" data-position="top left"><i class="question circle outline icon"></i></span></label><input type="text" name="Name" required></div>
             <div class="field"><label>{{tr "SubscriptionGroup"}}</label><input type="text" name="Group" value="Default"></div>
+            <div class="field"><label>{{tr "DisplayIndex"}}</label><input type="number" name="DisplayIndex" value="0" step="1"></div>
             <div class="two fields">
                 <div class="field pne-date-row">
                     <label>{{tr "SubscriptionStartDate"}}</label>
@@ -315,7 +316,8 @@ function subscriptionFormData() {
         Note: form.find('[name=Note]').val().trim(),
         AutoRenewal: form.find('[name=AutoRenewal]').is(':checked') ? 'on' : 'off',
         Enable: form.find('[name=Enable]').is(':checked') ? 'on' : 'off',
-        Server: form.find('[name=Server]').val() === '1'
+        Server: form.find('[name=Server]').val() === '1',
+        DisplayIndex: parseInt(form.find('[name=DisplayIndex]').val(), 10) || 0
     };
 }
 function subscriptionCurrencyDropdown(form) {
@@ -362,6 +364,7 @@ function addOrEditSubscription(subscription) {
     form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '年');
     subscriptionCurrencyDropdown(form).dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
     form.find('[name=Group]').val(serverRow ? (current.Group || 'Servers') : (current.Group || 'Default'));
+    form.find('[name=DisplayIndex]').val(current.DisplayIndex || 0);
     form.find('[name=Link]').val(current.Link || '');
     form.find('[name=Note]').val(current.Note || '');
     const autoRenewalCheckbox = form.find('.subscription-auto-renewal.checkbox');

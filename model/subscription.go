@@ -302,6 +302,7 @@ type Subscription struct {
 	PriceUnit   string
 	Currency    string `gorm:"size:3"`
 	Link        string
+	DisplayIndex int
 	Note        string
 	Group       string `gorm:"column:group_name"`
 	AutoRenewal *bool  `gorm:"not null;default:true"`

@@ -368,6 +368,7 @@ type subscriptionForm struct {
 	PriceUnit   string
 	Currency    string
 	Link        string
+	DisplayIndex int
 	Note        string
 	Group       string
 	AutoRenewal string
@@ -453,6 +454,7 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				Group:       form.Group,
 				AutoRenewal: &autoRenewal,
 				Disabled:    form.Enable == "off",
+				DisplayIndex: form.DisplayIndex,
 			}
 			if form.ID == 0 {
 				err = singleton.DB.Create(&subscription).Error
@@ -460,7 +462,7 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				var existing model.Subscription
 				if err = singleton.DB.First(&existing, form.ID).Error; err == nil {
 					subscription.ID = existing.ID
-					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group", "AutoRenewal", "Disabled").Updates(subscription).Error
+					err = singleton.DB.Model(&existing).Select("Name", "StartDate", "EndDate", "Price", "PriceUnit", "Currency", "Link", "Note", "Group", "AutoRenewal", "Disabled", "DisplayIndex").Updates(subscription).Error
 				}
 			}
 			if err == nil {

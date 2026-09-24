@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -59,6 +60,7 @@ type subscriptionView struct {
 	OriginalUnit   string // 原始金额对应的货币码
 	PriceUnit      string
 	PriceUnitLabel string
+	DisplayIndex   int
 	MonthlyCost    float64
 	YearlyCost     float64
 	CostCurrency   string
@@ -101,6 +103,7 @@ func (row subscriptionView) FormData() template.JS {
 		PriceUnit   string `json:"PriceUnit"`
 		Currency    string `json:"Currency"`
 		Link        string `json:"Link"`
+		DisplayIndex int   `json:"DisplayIndex"`
 		Note        string `json:"Note"`
 		Group       string `json:"Group"`
 		AutoRenewal bool   `json:"AutoRenewal"`
@@ -111,6 +114,7 @@ func (row subscriptionView) FormData() template.JS {
 		Price: row.Price, PriceUnit: row.PriceUnit, Currency: row.Currency,
 		Link: row.Link, Note: row.Note, Group: row.Group,
 		AutoRenewal: row.AutoRenewal, Enable: row.Enabled,
+		DisplayIndex: row.DisplayIndex,
 	})
 	return template.JS(data)
 }
@@ -268,6 +272,13 @@ func (mp *memberPage) subscription(c *gin.Context) {
 
 	var subscriptions []model.Subscription
 	singleton.DB.Order("id").Find(&subscriptions)
+	// 手动订阅按 DisplayIndex 降序（越大越靠前），DisplayIndex 相同时按 ID 升序
+	sort.SliceStable(subscriptions, func(i, j int) bool {
+		if subscriptions[i].DisplayIndex == subscriptions[j].DisplayIndex {
+			return subscriptions[i].ID < subscriptions[j].ID
+		}
+		return subscriptions[i].DisplayIndex > subscriptions[j].DisplayIndex
+	})
 	for i := range subscriptions {
 		item := subscriptions[i]
 		currency := item.Currency
@@ -313,6 +324,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			Manual:         true,
 			AutoRenewal:    item.AutoRenewalEnabled(),
 			Enabled:        !item.Disabled,
+			DisplayIndex:   item.DisplayIndex,
 		})
 	}
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/subscription", mygin.CommonEnvironment(c, gin.H{

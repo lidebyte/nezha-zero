@@ -294,22 +294,18 @@ func SortedCurrencies() []Currency {
 // read directly from Server.PublicNote and are never copied into this table.
 type Subscription struct {
 	Common
-	Name        string
-	StartDate   time.Time
-	EndDate     time.Time `gorm:"index"`
-	Price       string
-	PriceUnit   string
-	Currency    string `gorm:"size:3"`
-	Link        string
+	Name         string
+	StartDate    time.Time
+	EndDate      time.Time `gorm:"index"`
+	Price        string
+	PriceUnit    string
+	Currency     string `gorm:"size:3"`
+	Link         string
 	DisplayIndex int
-	Note        string
-	Group       string `gorm:"column:group_name"`
-	AutoRenewal *bool  `gorm:"not null;default:true"`
-	Disabled    bool   `gorm:"default:false"`
-}
-
-func (s Subscription) AutoRenewalEnabled() bool {
-	return s.AutoRenewal == nil || *s.AutoRenewal
+	Note         string
+	Group        string `gorm:"column:group_name"`
+	AutoRenewal  bool   `gorm:"not null;default:true"`
+	Disabled     bool   `gorm:"default:false"`
 }
 
 func (s Subscription) MarshalForDashboard() template.JS {
@@ -338,7 +334,7 @@ func (s Subscription) MarshalForDashboard() template.JS {
 		Link:        s.Link,
 		Note:        s.Note,
 		Group:       s.Group,
-		AutoRenewal: s.AutoRenewalEnabled(),
+		AutoRenewal: s.AutoRenewal,
 		Enable:      !s.Disabled,
 	})
 	return template.JS(data)

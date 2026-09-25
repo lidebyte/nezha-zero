@@ -94,20 +94,20 @@ func subscriptionFormCycle(cycle string, lifetime bool) string {
 
 func (row subscriptionView) FormData() template.JS {
 	data, _ := json.Marshal(struct {
-		ID          uint64 `json:"ID"`
-		Server      bool   `json:"Server"`
-		Name        string `json:"Name"`
-		StartDate   string `json:"StartDate"`
-		EndDate     string `json:"EndDate"`
-		Price       string `json:"Price"`
-		PriceUnit   string `json:"PriceUnit"`
-		Currency    string `json:"Currency"`
-		Link        string `json:"Link"`
-		DisplayIndex int   `json:"DisplayIndex"`
-		Note        string `json:"Note"`
-		Group       string `json:"Group"`
-		AutoRenewal bool   `json:"AutoRenewal"`
-		Enable      bool   `json:"Enable"`
+		ID           uint64 `json:"ID"`
+		Server       bool   `json:"Server"`
+		Name         string `json:"Name"`
+		StartDate    string `json:"StartDate"`
+		EndDate      string `json:"EndDate"`
+		Price        string `json:"Price"`
+		PriceUnit    string `json:"PriceUnit"`
+		Currency     string `json:"Currency"`
+		Link         string `json:"Link"`
+		DisplayIndex int    `json:"DisplayIndex"`
+		Note         string `json:"Note"`
+		Group        string `json:"Group"`
+		AutoRenewal  bool   `json:"AutoRenewal"`
+		Enable       bool   `json:"Enable"`
 	}{
 		ID: row.ID, Server: row.Server, Name: row.Name,
 		StartDate: row.StartDate, EndDate: row.EndDate,
@@ -319,7 +319,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			Note:           item.Note,
 			Group:          item.Group,
 			Manual:         true,
-			AutoRenewal:    item.AutoRenewalEnabled(),
+			AutoRenewal:    item.AutoRenewal,
 			Enabled:        !item.Disabled,
 			DisplayIndex:   item.DisplayIndex,
 		})

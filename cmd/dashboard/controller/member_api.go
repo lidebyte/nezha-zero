@@ -452,12 +452,15 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 				Link:         normalizeSubscriptionLink(form.Link),
 				Note:         strings.TrimSpace(form.Note),
 				Group:        form.Group,
-				AutoRenewal:  &autoRenewal,
+				AutoRenewal:  autoRenewal,
 				Disabled:     form.Enable == "off",
 				DisplayIndex: form.DisplayIndex,
 			}
 			if form.ID == 0 {
 				err = singleton.DB.Create(&subscription).Error
+				if err == nil {
+					err = singleton.DB.Model(&subscription).Update("auto_renewal", autoRenewal).Error
+				}
 			} else {
 				var existing model.Subscription
 				if err = singleton.DB.First(&existing, form.ID).Error; err == nil {

@@ -136,7 +136,7 @@ func checkSubscriptionExpirationReminders() {
 	now := time.Now()
 	for i := range subscriptions {
 		subscription := &subscriptions[i]
-		if subscription.Disabled || !subscription.AutoRenewalEnabled() {
+		if subscription.Disabled || !subscription.AutoRenewal {
 			continue
 		}
 		renewedEnd, renewed := model.RenewSubscriptionEndDate(subscription.EndDate, subscription.PriceUnit, now)

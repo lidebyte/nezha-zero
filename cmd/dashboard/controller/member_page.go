@@ -220,13 +220,19 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	singleton.SortedServerLock.RLock()
 	for _, server := range singleton.SortedServerList {
 		item := model.ParseServerSubscription(server, now)
+		lifetime := item.Lifetime || model.IsLifetimeSubscriptionCycle(item.PriceUnit)
 		costCycle := item.PriceUnit
-		if item.Lifetime {
+		if lifetime {
 			costCycle = "永续"
 		}
 		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, costCycle, item.Currency)
-		remainingDays := model.SubscriptionRemainingDays(now, item.EndDate)
-		if !item.EndDate.IsZero() && remainingDays < 0 {
+		remainingDays := 0
+		hasEndDate := false
+		if !lifetime {
+			remainingDays = model.SubscriptionRemainingDays(now, item.EndDate)
+			hasEndDate = !item.EndDate.IsZero()
+		}
+		if hasEndDate && remainingDays < 0 {
 			costReason = ""
 		}
 		displayAmount, originalAmount, displayUnit := convertPrice(item.Price, costCycle, item.Currency)
@@ -243,16 +249,16 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			StartDate:      subscriptionDate(item.StartDate),
 			EndDate:        subscriptionDate(item.EndDate),
 			RemainingDays:  remainingDays,
-			HasEndDate:     !item.EndDate.IsZero(),
-			Lifetime:       item.Lifetime,
+			HasEndDate:     hasEndDate,
+			Lifetime:       lifetime,
 			Price:          item.Price,
 			Currency:       item.Currency,
 			DisplayAmount:  displayAmount,
 			DisplayUnit:    displayUnit,
 			OriginalAmount: originalAmount,
 			OriginalUnit:   item.Currency,
-			PriceUnit:      subscriptionFormCycle(item.PriceUnit, item.Lifetime),
-			PriceUnitLabel: formatPriceUnit(item.PriceUnit, item.Lifetime),
+			PriceUnit:      subscriptionFormCycle(item.PriceUnit, lifetime),
+			PriceUnitLabel: formatPriceUnit(item.PriceUnit, lifetime),
 			MonthlyCost:    monthlyCost,
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,
@@ -282,12 +288,17 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		if currency == "" {
 			currency = model.DetectCurrency(item.Price)
 		}
+		lifetime := model.IsLifetimeSubscriptionCycle(item.PriceUnit)
 		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, item.PriceUnit, currency)
-		remainingDays := model.SubscriptionRemainingDays(now, item.EndDate)
-		if item.Disabled || (!item.EndDate.IsZero() && remainingDays < 0) {
+		remainingDays := 0
+		hasEndDate := false
+		if !lifetime {
+			remainingDays = model.SubscriptionRemainingDays(now, item.EndDate)
+			hasEndDate = !item.EndDate.IsZero()
+		}
+		if item.Disabled || (hasEndDate && remainingDays < 0) {
 			costReason = ""
 		}
-		lifetime := model.IsLifetimeSubscriptionCycle(item.PriceUnit)
 		displayAmount, originalAmount, displayUnit := convertPrice(item.Price, item.PriceUnit, currency)
 		if displayAmount == "" {
 			displayAmount = item.Price
@@ -300,7 +311,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			StartDate:      subscriptionDate(item.StartDate),
 			EndDate:        subscriptionDate(item.EndDate),
 			RemainingDays:  remainingDays,
-			HasEndDate:     !item.EndDate.IsZero(),
+			HasEndDate:     hasEndDate,
 			Lifetime:       lifetime,
 			Price:          item.Price,
 			Currency:       currency,

@@ -494,10 +494,14 @@ func (ma *memberAPI) updateServerSubscriptionLink(c *gin.Context, form subscript
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: fmt.Sprintf("数据库错误：%s", err)})
 		return
 	}
+	// 订阅页读 Link 时只持 SortedServerLock，写 Link 需同时持有两把锁；
+	// 锁顺序与 ReSortServer 保持一致（先 ServerLock 后 SortedServerLock），避免死锁
 	singleton.ServerLock.Lock()
+	singleton.SortedServerLock.Lock()
 	if running := singleton.ServerList[server.ID]; running != nil {
 		running.Link = link
 	}
+	singleton.SortedServerLock.Unlock()
 	singleton.ServerLock.Unlock()
 	audit.Record(c, audit.TypeConfig, "Server link updated", fmt.Sprintf("server: %s (ID %d)", server.Name, server.ID))
 	c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})

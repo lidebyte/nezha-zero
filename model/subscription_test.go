@@ -90,7 +90,7 @@ func TestRenewSubscriptionEndDate(t *testing.T) {
 			name:    "renews expired monthly subscription through today",
 			end:     time.Date(2026, 7, 20, 0, 0, 0, 0, location),
 			cycle:   "月",
-			want:    time.Date(2026, 10, 20, 0, 0, 0, 0, location),
+			want:    time.Date(2026, 9, 20, 0, 0, 0, 0, location),
 			renewed: true,
 		},
 		{

@@ -147,6 +147,9 @@ func checkSubscriptionExpirationReminders() {
 			log.Printf("NEZHA>> renew subscription %d failed: %v", subscription.ID, err)
 			continue
 		}
+		log.Printf("NEZHA>> subscription %d (%s) auto-renewed: end_date %s -> %s",
+			subscription.ID, subscription.Name,
+			subscription.EndDate.Format("2006-01-02"), renewedEnd.Format("2006-01-02"))
 		subscription.EndDate = renewedEnd
 	}
 	for _, rule := range rules {
@@ -301,7 +304,11 @@ func RefreshCurrencyRates() error {
 
 	resp, err := currencyHTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request currency provider: %w", err)
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) && urlErr.Err != nil {
+			err = urlErr.Err
+		}
+		return fmt.Errorf("request currency provider failed: %v", err)
 	}
 	defer resp.Body.Close()
 	monthlyUsed, monthlyLimit := currencyUsageFromResponse(Conf.CurrencyProvider, resp.Header)

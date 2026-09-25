@@ -339,16 +339,20 @@ func (c *Config) TwoFactorActive() bool {
 	return c.Site.TwoFactorSecret != ""
 }
 
-// updateIgnoredIPNotificationID 更新用于判断服务器ID是否属于特定服务器的map
+// updateIgnoredIPNotificationID 更新用于判断服务器ID是否属于特定服务器的map。
+// 必须在本地构建完成后一次性整体赋值：ReportSystemInfo 热路径（rpc/nezha.go）会
+// 无锁并发读取该字段，若先赋值再逐项写入，会触发不可 recover 的
+// concurrent map read and map write 致命错误。
 func (c *Config) updateIgnoredIPNotificationID() {
-	c.IgnoredIPNotificationServerIDs = make(map[uint64]bool)
+	ids := make(map[uint64]bool)
 	splitedIDs := strings.Split(c.IgnoredIPNotification, ",")
 	for i := 0; i < len(splitedIDs); i++ {
 		id, _ := strconv.ParseUint(splitedIDs[i], 10, 64)
 		if id > 0 {
-			c.IgnoredIPNotificationServerIDs[id] = true
+			ids[id] = true
 		}
 	}
+	c.IgnoredIPNotificationServerIDs = ids
 }
 
 // Save 保存配置文件

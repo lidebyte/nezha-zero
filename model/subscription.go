@@ -354,7 +354,7 @@ func ParseServerSubscription(server *Server, now time.Time) ServerSubscription {
 	if months == 0 {
 		return result
 	}
-	for i := 0; !result.EndDate.After(now.In(result.EndDate.Location())) && i < 2400; i++ {
+	for i := 0; SubscriptionRemainingDays(now, result.EndDate) < 0 && i < 2400; i++ {
 		result.EndDate = result.EndDate.AddDate(0, months, 0)
 	}
 	return result
@@ -390,17 +390,17 @@ func SubscriptionRemainingDays(now, end time.Time) int {
 }
 
 func RenewSubscriptionEndDate(end time.Time, cycle string, now time.Time) (time.Time, bool) {
-	if end.IsZero() || end.After(now.In(end.Location())) {
+	if end.IsZero() || SubscriptionRemainingDays(now, end) >= 0 {
 		return end, false
 	}
 	months := SubscriptionCycleMonths(cycle)
 	if months == 0 {
 		return end, false
 	}
-	for i := 0; !end.After(now.In(end.Location())) && i < 2400; i++ {
+	for i := 0; SubscriptionRemainingDays(now, end) < 0 && i < 2400; i++ {
 		end = end.AddDate(0, months, 0)
 	}
-	if !end.After(now.In(end.Location())) {
+	if SubscriptionRemainingDays(now, end) < 0 {
 		return end, false
 	}
 	return end, true

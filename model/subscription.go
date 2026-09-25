@@ -3,14 +3,11 @@ package model
 import (
 	"encoding/json"
 	"errors"
-	"html/template"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/railzen/nezha-zero/pkg/utils"
 )
 
 const ServerSubscriptionGroup = "Servers"
@@ -304,40 +301,8 @@ type Subscription struct {
 	DisplayIndex int
 	Note         string
 	Group        string `gorm:"column:group_name"`
-	AutoRenewal  bool   `gorm:"not null;default:true"`
+	AutoRenewal  bool   `gorm:"not null"`
 	Disabled     bool   `gorm:"default:false"`
-}
-
-func (s Subscription) MarshalForDashboard() template.JS {
-	type dashboardSubscription struct {
-		ID          uint64 `json:"ID"`
-		Name        string `json:"Name"`
-		StartDate   string `json:"StartDate"`
-		EndDate     string `json:"EndDate"`
-		Price       string `json:"Price"`
-		PriceUnit   string `json:"PriceUnit"`
-		Currency    string `json:"Currency"`
-		Link        string `json:"Link"`
-		Note        string `json:"Note"`
-		Group       string `json:"Group"`
-		AutoRenewal bool   `json:"AutoRenewal"`
-		Enable      bool   `json:"Enable"`
-	}
-	data, _ := utils.Json.Marshal(dashboardSubscription{
-		ID:          s.ID,
-		Name:        s.Name,
-		StartDate:   formatSubscriptionDate(s.StartDate),
-		EndDate:     formatSubscriptionDate(s.EndDate),
-		Price:       s.Price,
-		PriceUnit:   s.PriceUnit,
-		Currency:    s.Currency,
-		Link:        s.Link,
-		Note:        s.Note,
-		Group:       s.Group,
-		AutoRenewal: s.AutoRenewal,
-		Enable:      !s.Disabled,
-	})
-	return template.JS(data)
 }
 
 type ServerSubscription struct {
@@ -439,13 +404,6 @@ func RenewSubscriptionEndDate(end time.Time, cycle string, now time.Time) (time.
 		return end, false
 	}
 	return end, true
-}
-
-func formatSubscriptionDate(value time.Time) string {
-	if value.IsZero() {
-		return ""
-	}
-	return value.Format("2006-01-02")
 }
 
 func rawSubscriptionValue(raw json.RawMessage) string {

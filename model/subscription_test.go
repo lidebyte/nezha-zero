@@ -2,7 +2,6 @@ package model
 
 import (
 	"math"
-	"strings"
 	"testing"
 	"time"
 )
@@ -64,21 +63,6 @@ func TestParseServerSubscription(t *testing.T) {
 	got = ParseServerSubscription(server, now)
 	if !got.Lifetime || !got.EndDate.IsZero() {
 		t.Fatalf("lifetime server subscription was not recognized: %+v", got)
-	}
-}
-
-func TestSubscriptionMarshalForDashboardEscapesScriptContent(t *testing.T) {
-	s := Subscription{Common: Common{ID: 7}, Name: `</script><script>alert(1)</script>`, Group: "Default"}
-	encoded := string(s.MarshalForDashboard())
-	if strings.Contains(encoded, "</script>") {
-		t.Fatalf("unsafe script terminator in JSON: %s", encoded)
-	}
-	if !strings.Contains(encoded, `"Enable":true`) {
-		t.Fatalf("enabled subscription state missing from JSON: %s", encoded)
-	}
-	s.Disabled = true
-	if encoded = string(s.MarshalForDashboard()); !strings.Contains(encoded, `"Enable":false`) {
-		t.Fatalf("disabled subscription state missing from JSON: %s", encoded)
 	}
 }
 

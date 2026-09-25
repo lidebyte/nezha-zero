@@ -128,10 +128,9 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	rates, _, _ := singleton.CurrencyRateSnapshot()
 	// convertPrice 对单条订阅计算列表展示价格：
 	// 括号外（主价格）由"按照月度价格显示"和"启用货币换算"决定；
-	// 括号内永远显示原始价格与原货币（不折算），仅在主价格与原价不一致时出现
+	// 括号内显示原始价格与原货币：换算后货币不同，或按月折算后金额不同时出现
 	convertPrice := func(price, priceUnit, currency string) (displayAmount, originalAmount, displayUnit string) {
 		currency = strings.ToUpper(strings.TrimSpace(currency))
-		lifetime := model.IsLifetimeSubscriptionCycle(priceUnit)
 		amount, ok := model.ParsePriceAmount(price)
 		if !ok || amount == 0 {
 			return "", "", ""
@@ -148,9 +147,8 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			displayAmount = formatSubscriptionAmount(amount / divisor)
 			displayUnit = currency
 		}
-		// 括号原价：原始金额（不折算），主价格与原价不一致时才显示
 		originalAmount = formatSubscriptionAmount(amount)
-		if lifetime || (displayAmount == originalAmount && displayUnit == currency) {
+		if displayUnit == currency && displayAmount == originalAmount {
 			originalAmount = ""
 		}
 		return displayAmount, originalAmount, displayUnit
@@ -192,7 +190,10 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		monthly := amount / float64(months)
 		return monthly, monthly * 12, currency, true, ""
 	}
-	formatPriceUnit := func(value string) string {
+	formatPriceUnit := func(value string, lifetime bool) string {
+		if lifetime || model.IsLifetimeSubscriptionCycle(value) {
+			return singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "PNELifetime"})
+		}
 		messageID := ""
 		switch model.SubscriptionCycleMonths(value) {
 		case 1:
@@ -209,10 +210,6 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			messageID = "BillingCycleThreeYears"
 		case 60:
 			messageID = "BillingCycleFiveYears"
-		default:
-			if model.IsLifetimeSubscriptionCycle(value) {
-				messageID = "PNELifetime"
-			}
 		}
 		if messageID == "" {
 			return value
@@ -255,7 +252,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			OriginalAmount: originalAmount,
 			OriginalUnit:   item.Currency,
 			PriceUnit:      subscriptionFormCycle(item.PriceUnit, item.Lifetime),
-			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
+			PriceUnitLabel: formatPriceUnit(item.PriceUnit, item.Lifetime),
 			MonthlyCost:    monthlyCost,
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,
@@ -312,7 +309,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			OriginalAmount: originalAmount,
 			OriginalUnit:   currency,
 			PriceUnit:      subscriptionFormCycle(item.PriceUnit, lifetime),
-			PriceUnitLabel: formatPriceUnit(item.PriceUnit),
+			PriceUnitLabel: formatPriceUnit(item.PriceUnit, lifetime),
 			MonthlyCost:    monthlyCost,
 			YearlyCost:     yearlyCost,
 			CostCurrency:   costCurrency,

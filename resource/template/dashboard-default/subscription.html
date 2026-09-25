@@ -407,9 +407,10 @@ function subscriptionRemainingSortKey(row) {
     const lifetime = row.dataset.lifetime === '1';
     const hasEnd = row.dataset.hasEnd === '1';
     const remaining = parseInt(row.dataset.remainingDays, 10) || 0;
-    if (enabled && hasEnd && remaining >= 0) return [0, remaining];
-    if (enabled && hasEnd && remaining < 0) return [1, 0];
-    if (enabled && lifetime) return [3, 0];
+    if (!enabled) return [4, 0];
+    if (hasEnd && remaining >= 0) return [0, remaining];
+    if (hasEnd && remaining < 0) return [1, 0];
+    if (lifetime) return [3, 0];
     return [2, 0];
 }
 

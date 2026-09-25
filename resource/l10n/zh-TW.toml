@@ -1290,12 +1290,6 @@ other = "啟用貨幣換算"
 [ShowMonthlyPrice]
 other = "按照月度價格顯示"
 
-[ShowMonthlyPriceHint]
-other = "開啟後，訂閱列表中的價格將按付費週期折算為每月價格（如年付價格除以 12），換算價格同步折算，永續訂閱仍顯示原始價格。"
-
-[MonthlyPriceColumnHint]
-other = "價格已按付費週期折算為每月價格，永續訂閱顯示原始價格"
-
 [CurrencyProvider]
 other = "匯率服務商"
 

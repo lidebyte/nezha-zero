@@ -202,7 +202,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                             {{tr "RemainingDays"}}
                             <span id="subscriptionRemainingSort" class="subscription-remaining-sort" title="{{tr "SortByRemainingDays"}}" role="button" tabindex="0" aria-pressed="false"><i class="sort amount down icon"></i></span>
                         </th>
-                        <th>{{if $.Conf.ShowMonthlyPrice}}{{tr "PriceMonthly"}}{{else}}{{tr "Price"}}{{end}}{{if $.Conf.ShowMonthlyPrice}} <span class="subscription-id-hint" data-tooltip="{{tr "MonthlyPriceColumnHint"}}" data-position="top left"><i class="question circle outline icon"></i></span>{{end}}</th>
+                        <th>{{if $.Conf.ShowMonthlyPrice}}{{tr "PriceMonthly"}}{{else}}{{tr "Price"}}{{end}}</th>
                         <th>{{tr "PriceUnit"}}</th>
                         {{if $hasSubscriptionNotes}}<th>{{tr "Note"}}</th>{{end}}
                         <th>{{tr "Administration"}}</th>

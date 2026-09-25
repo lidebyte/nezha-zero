@@ -48,14 +48,12 @@
         color: rgba(255, 255, 255, 0.45) !important;
     }
 
-    .currency-api-key-help,
-    .subscription-monthly-price-help {
+    .currency-api-key-help {
         margin-left: 0.2rem;
         cursor: help;
     }
 
-    .currency-api-key-help > .icon,
-    .subscription-monthly-price-help > .icon {
+    .currency-api-key-help > .icon {
         margin: 0 !important;
         font-size: 0.85em;
         color: rgba(0, 0, 0, 0.45);
@@ -69,8 +67,7 @@
         row-gap: 0.25rem;
     }
 
-    html[nz-theme='dark'] .currency-api-key-help > .icon,
-    html[nz-theme='dark'] .subscription-monthly-price-help > .icon {
+    html[nz-theme='dark'] .currency-api-key-help > .icon {
         color: rgba(255, 255, 255, 0.45);
     }
 
@@ -282,10 +279,7 @@
                 <div class="field">
                     <div class="ui checkbox show-monthly-price">
                         <input name="ShowMonthlyPrice" type="checkbox" tabindex="0" class="hidden">
-                        <label>{{tr "ShowMonthlyPrice"}}<span id="subscriptionMonthlyPriceHelp" class="subscription-monthly-price-help" tabindex="0"><i class="question circle outline icon"></i></span></label>
-                    </div>
-                    <div id="subscriptionMonthlyPricePopup" class="ui flowing popup transition hidden">
-                        <div style="min-width: 18em; max-width: 30em;">{{tr "ShowMonthlyPriceHint"}}</div>
+                        <label>{{tr "ShowMonthlyPrice"}}</label>
                     </div>
                 </div>
                 <div class="field">
@@ -898,13 +892,6 @@
     baseCurrencyDropdown.addClass('currency-priority-dropdown');
     $('#currencyApiKeyHelp').popup({
         popup: $('#currencyApiKeyPopup'),
-        on: 'hover',
-        hoverable: true,
-        position: 'top left',
-        delay: {show: 120, hide: 300}
-    });
-    $('#subscriptionMonthlyPriceHelp').popup({
-        popup: $('#subscriptionMonthlyPricePopup'),
         on: 'hover',
         hoverable: true,
         position: 'top left',

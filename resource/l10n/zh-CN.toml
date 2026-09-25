@@ -910,6 +910,9 @@ other = "永续"
 [Price]
 other = "价格"
 
+[PriceMonthly]
+other = "价格（月）"
+
 [Expired]
 other = "已到期"
 

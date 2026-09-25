@@ -910,6 +910,9 @@ other = "永續"
 [Price]
 other = "價格"
 
+[PriceMonthly]
+other = "價格（月）"
+
 [Expired]
 other = "已到期"
 

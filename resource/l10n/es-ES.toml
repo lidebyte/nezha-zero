@@ -919,6 +919,9 @@ other = "Lifetime"
 [Price]
 other = "Price"
 
+[PriceMonthly]
+other = "Precio (mes)"
+
 [Expired]
 other = "Expired"
 

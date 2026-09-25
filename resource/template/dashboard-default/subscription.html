@@ -102,6 +102,13 @@
 html[nz-theme='dark'] .subscription-original-price {
     color: rgba(255,255,255,.45);
 }
+.subscription-price-disabled {
+    color: rgba(0,0,0,.45);
+    text-decoration: line-through;
+}
+html[nz-theme='dark'] .subscription-price-disabled {
+    color: rgba(255,255,255,.45);
+}
 .subscription-note {
     display: inline-block;
     max-width: 16em;
@@ -211,7 +218,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         <td>{{if $subscription.StartDate}}{{$subscription.StartDate}}{{else}}-{{end}}</td>
                         <td>{{if $subscription.EndDate}}{{$subscription.EndDate}}{{else}}-{{end}}</td>
                         <td class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if $subscription.Lifetime}}subscription-days-lifetime{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if $subscription.Lifetime}}{{tr "Lifetime"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
-                        <td>{{if $subscription.DisplayAmount}}{{$subscription.DisplayAmount}}{{if $subscription.DisplayUnit}} {{$subscription.DisplayUnit}}{{end}}{{if $subscription.OriginalAmount}} <span class="subscription-original-price">({{$subscription.OriginalAmount}}{{if $subscription.OriginalUnit}} {{$subscription.OriginalUnit}}{{end}})</span>{{end}}{{else if $subscription.Price}}{{$subscription.Price}}{{if $subscription.Currency}} {{$subscription.Currency}}{{end}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
+                        <td{{if not $subscription.Enabled}} class="subscription-price-disabled"{{end}}>{{if $subscription.DisplayAmount}}{{$subscription.DisplayAmount}}{{if $subscription.DisplayUnit}} {{$subscription.DisplayUnit}}{{end}}{{if $subscription.OriginalAmount}} <span class="subscription-original-price">({{$subscription.OriginalAmount}}{{if $subscription.OriginalUnit}} {{$subscription.OriginalUnit}}{{end}})</span>{{end}}{{else if $subscription.Price}}{{$subscription.Price}}{{if $subscription.Currency}} {{$subscription.Currency}}{{end}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
                         <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
                         {{if $hasSubscriptionNotes}}<td>{{if $subscription.Note}}<span class="subscription-note" title="{{$subscription.Note}}">{{$subscription.Note}}</span>{{else}}-{{end}}</td>{{end}}
                         <td>

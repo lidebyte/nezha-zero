@@ -1366,6 +1366,12 @@ other = "Delete this subscription reminder rule?"
 [SubscriptionExpirationReminderTitle]
 other = "[Subscription Expiration Reminder]"
 
+[UpcomingSubscriptions]
+other = "Upcoming Subscriptions"
+
+[SubscriptionDue]
+other = "due"
+
 [SubscriptionExpirationReminderIntro]
 other = "The following manual subscriptions are about to expire:"
 

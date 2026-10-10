@@ -16,6 +16,59 @@
 .subscription-summary-block {
     white-space: nowrap;
 }
+.subscription-overview .subscription-summary-block {
+    max-width: 100%;
+    white-space: normal;
+}
+.subscription-upcoming {
+    flex: 0 1 420px;
+    max-width: 420px;
+    min-width: 0;
+}
+.subscription-upcoming[hidden] {
+    display: none;
+}
+.subscription-upcoming-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .4rem;
+}
+.subscription-upcoming-card {
+    min-width: 0;
+    padding: .45rem .6rem;
+    border: 1px solid #e5e9ef;
+    border-radius: 6px;
+    background: #fff;
+    overflow-wrap: anywhere;
+}
+.subscription-upcoming-name {
+    margin-bottom: .2rem;
+    color: rgba(0,0,0,.87);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.subscription-upcoming-date {
+    font-size: 11px;
+    line-height: 1.4;
+}
+.subscription-upcoming-price {
+    color: rgba(0,0,0,.87);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+html[nz-theme='dark'] .subscription-upcoming-card {
+    background: #282828;
+    border-color: rgba(255,255,255,.18);
+}
+html[nz-theme='dark'] .subscription-upcoming-name,
+html[nz-theme='dark'] .subscription-upcoming-price {
+    color: rgba(255,255,255,.87);
+}
+html[nz-theme='dark'] .subscription-upcoming-date {
+    color: rgba(255,255,255,.6);
+}
 .subscription-group-header {
     cursor: pointer;
 }
@@ -158,10 +211,64 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
 #subscriptionForm.server-locked .ui.checkbox label:after {
     opacity: .45;
 }
+@media only screen and (min-width: 768px) {
+    .ui.grid.subscription-header-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .ui.grid.subscription-header-grid > .column {
+        width: auto !important;
+        min-width: 0;
+    }
+    .subscription-overview .subscription-summary {
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .subscription-overview .subscription-summary-block {
+        flex: 0 1 200px;
+        min-width: 0;
+    }
+    .subscription-header-grid > .dashboard-mobile-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: .4rem;
+    }
+    .subscription-header-grid > .dashboard-mobile-toolbar > .button {
+        margin: 0;
+    }
+}
+@media only screen and (min-width: 768px) and (max-width: 1100px) {
+    .subscription-header-grid > .dashboard-mobile-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
 @media only screen and (max-width: 767px) {
     .subscription-summary {
         flex-wrap: wrap;
         gap: .75rem 2rem;
+    }
+    .subscription-overview .subscription-summary {
+        flex-direction: column;
+        gap: .75rem;
+    }
+    .subscription-upcoming {
+        flex: none;
+        width: 100%;
+        max-width: none;
+    }
+    .subscription-upcoming-list {
+        gap: .4rem;
+    }
+    .subscription-upcoming-card {
+        padding: .4rem .45rem;
+    }
+}
+@media only screen and (max-width: 360px) {
+    .subscription-upcoming-date {
+        font-size: 10px;
+        white-space: nowrap;
     }
 }
 </style>
@@ -169,13 +276,16 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
     <div class="ui container">
         {{$hasSubscriptionNotes := false}}
         {{range $subscription := .Subscriptions}}{{if $subscription.Note}}{{$hasSubscriptionNotes = true}}{{end}}{{end}}
-        <div class="ui stackable middle aligned grid">
-            <div class="left aligned eight wide column">
+        <div class="ui stackable middle aligned grid subscription-header-grid">
+            <div class="left aligned sixteen wide column subscription-overview">
                 <div class="subscription-summary">
                     <div class="subscription-summary-block">
                         {{tr "YearlySubscriptionCost"}}: <span id="subscriptionStatYearly">-</span><br>
                         <small>{{tr "MonthlySubscriptionCost"}}: <span id="subscriptionStatMonthly">-</span></small>
                     </div>
+                    <section id="subscriptionUpcoming" class="subscription-upcoming" aria-label="{{tr "UpcomingSubscriptions"}}" hidden>
+                        <div id="subscriptionUpcomingList" class="subscription-upcoming-list"></div>
+                    </section>
                 </div>
             </div>
             <div class="right floated right aligned eight wide column dashboard-mobile-toolbar">
@@ -187,7 +297,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                 </button>
             </div>
         </div>
-        <table class="ui basic table dashboard-mobile-table">
+        <table class="ui basic table selectable dashboard-mobile-table">
                 <thead>
                     <tr>
                         <th class="subscription-select-column dashboard-mobile-control"><button onclick="checkAllSubscriptions()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
@@ -217,7 +327,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                 </thead>
                 <tbody>
                     {{range $subscription := .Subscriptions}}
-                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}" data-display-amount="{{$subscription.DisplayAmount}}">
+                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}" data-display-amount="{{$subscription.DisplayAmount}}" data-original-price="{{$subscription.Price}}" data-original-currency="{{$subscription.Currency}}">
                         <td data-label="{{tr "SelectAll"}}" class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
                         <td data-label="ID">{{if $subscription.Manual}}{{$subscription.ID}}({{$subscription.DisplayIndex}}){{else}}S{{$subscription.ID}}{{end}}</td>
                         <td data-label="{{tr "Name"}}">{{$subscription.Name}}</td>
@@ -535,6 +645,35 @@ function renderSubscriptionCosts(elementID, costs) {
     }).join(' · ');
 }
 
+function renderUpcomingSubscriptions() {
+    const upcoming = subscriptionRows.filter(function (row) {
+        return row.style.display !== 'none' && subscriptionRemainingSortKey(row)[0] === 0;
+    }).sort(function (a, b) {
+        const dateOrder = a.cells[5].textContent.trim().localeCompare(b.cells[5].textContent.trim());
+        return dateOrder || subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
+    }).slice(0, 3);
+    const list = document.getElementById('subscriptionUpcomingList');
+    list.replaceChildren();
+    upcoming.forEach(function (row) {
+        const card = document.createElement('article');
+        card.className = 'subscription-upcoming-card';
+        const name = document.createElement('div');
+        name.className = 'subscription-upcoming-name';
+        name.textContent = row.cells[2].textContent.trim();
+        const date = document.createElement('time');
+        date.className = 'subscription-upcoming-date';
+        date.dateTime = row.cells[5].textContent.trim();
+        date.textContent = date.dateTime + ' {{tr "SubscriptionDue"}}';
+        const price = document.createElement('div');
+        price.className = 'subscription-upcoming-price';
+        const amount = (row.dataset.originalPrice || '').match(/[-+]?\d[\d.,]*/);
+        price.textContent = amount ? amount[0] + (row.dataset.originalCurrency ? ' ' + row.dataset.originalCurrency : '') : '-';
+        card.append(name, date, price);
+        list.appendChild(card);
+    });
+    document.getElementById('subscriptionUpcoming').hidden = upcoming.length === 0;
+}
+
 function filterSubscriptionsByGroup(group) {
     const monthlyCosts = {};
     const yearlyCosts = {};
@@ -554,6 +693,7 @@ function filterSubscriptionsByGroup(group) {
     });
     renderSubscriptionCosts('subscriptionStatMonthly', monthlyCosts);
     renderSubscriptionCosts('subscriptionStatYearly', yearlyCosts);
+    renderUpcomingSubscriptions();
 }
 
 $(subscriptionGroupFilter).dropdown({

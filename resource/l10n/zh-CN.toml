@@ -1365,6 +1365,12 @@ other = "确认删除此订阅到期提醒规则？"
 [SubscriptionExpirationReminderTitle]
 other = "[订阅到期提醒]"
 
+[UpcomingSubscriptions]
+other = "即将到期的订阅"
+
+[SubscriptionDue]
+other = "到期"
+
 [SubscriptionExpirationReminderIntro]
 other = "以下手动订阅即将到期："
 

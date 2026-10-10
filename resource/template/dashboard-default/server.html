@@ -1,6 +1,7 @@
 {{define "dashboard-default/server"}}
 {{template "common/header" .}}
 {{template "common/menu" .}}
+<link rel="stylesheet" href="/static/dashboard-mobile.css?v20261010a">
 <style>
 /* 让 Name 列最小宽度为 100px */
 table.ui.basic.table td:nth-child(3),
@@ -18,10 +19,10 @@ table.ui.basic.table th:nth-child(5) {
     transition: background-color 0.3s ease;
 }
 </style>
-<div class="nb-container">
+<div class="nb-container dashboard-mobile-page">
     <div class="ui container">
         <div class="ui grid">
-            <div class="right floated right aligned twelve wide column">
+            <div class="right floated right aligned twelve wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button"
                             data-clipboard-text="{{if $.Conf.GRPCHost}}{{if $.Conf.GRPCDiscoverKey}}{{if eq $.Conf.Language "zh-CN"}}curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh{{else}}curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/install_en.sh{{end}} -o naza.sh && chmod +x naza.sh && ./naza.sh discover_agent {{$.Conf.GRPCHost}} {{if $.Conf.ProxyGRPCPort}}{{$.Conf.ProxyGRPCPort}}{{else}}{{$.Conf.GRPCPort}}{{end}} {{$.Conf.GRPCDiscoverKey}}{{if $.Conf.TLS}} --tls{{end}}{{if $.Conf.DisableCommandExecuteInInstall}} --disable-command-execute{{end}}{{else}}{{tr "DiscoverDisabledAlert"}}{{end}}{{else}}{{tr "NoDomainAlert"}}{{end}}">
                             <i class="copy icon"></i> {{tr "AutoDiscover"}}
@@ -40,10 +41,10 @@ table.ui.basic.table th:nth-child(5) {
                 </button>
             </div>
         </div>
-        <table class="ui basic table">
+        <table class="ui basic table dashboard-mobile-table">
             <thead>
                 <tr>
-                    <th><button onclick="checkAllServer()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
+                    <th class="dashboard-mobile-control"><button onclick="checkAllServer()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
                     <th>ID({{tr "DisplayIndex"}})</th>
                     <th>{{tr "Name"}}</th>
                     <th>{{tr "ServerGroup"}}</th>
@@ -61,18 +62,18 @@ table.ui.basic.table th:nth-child(5) {
             <tbody>
                 {{range $server := .Servers}}
                 <tr class="server-row">
-                    <td>
+                    <td data-label="{{tr "SelectAll"}}">
                         <input type="checkbox" class="nezha-servers" value="{{$server.ID}}" style="margin-right: 10px;"/>
                         {{if $server.ShowCountryFlag}}
                         <i class="fi fi-{{if $server.Host.CountryCode}}{{$server.Host.CountryCode}}{{else}}un{{end}}"></i>
                         {{end}}
                     </td>
-                    <td>{{$server.ID}}({{$server.DisplayIndex}})</td>
-                    <td>{{$server.Name}}</td>
-                    <td>{{$server.Tag}}</td>
-                    <td style="white-space: nowrap; vertical-align: middle;">
+                    <td data-label="ID({{tr "DisplayIndex"}})">{{$server.ID}}({{$server.DisplayIndex}})</td>
+                    <td data-label="{{tr "Name"}}">{{$server.Name}}</td>
+                    <td data-label="{{tr "ServerGroup"}}">{{$server.Tag}}</td>
+                    <td data-label="IP" style="white-space: nowrap; vertical-align: middle;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="white-space: normal;">{{$server.Host.IP}}</span>
+                            <span class="server-ip-address" style="white-space: normal;">{{$server.Host.IP}}</span>
                             <button class="ui icon mini button ip-copy"
                                 data-clipboard-text="{{$server.Host.IP}}"
                                 data-tooltip="{{tr "ClickToCopy"}} IPv4"
@@ -83,15 +84,15 @@ table.ui.basic.table th:nth-child(5) {
                     </td>
 
 
-                    <td>{{$server.Host.Version}}</td>
-                    <td>{{if $server.EnableDDNS}}Yes{{else}}No{{end}}</td>
-                    <td>{{if $server.HideForGuest}}Yes{{else}}No{{end}}</td>
-                    <td>
+                    <td data-label="{{tr "VersionNumber"}}">{{$server.Host.Version}}</td>
+                    <td data-label="{{tr "EnableDDNS"}}">{{if $server.EnableDDNS}}Yes{{else}}No{{end}}</td>
+                    <td data-label="{{tr "HideForGuest"}}">{{if $server.HideForGuest}}Yes{{else}}No{{end}}</td>
+                    <td data-label="{{tr "Secret"}}">
                         <button class="ui icon green mini button" data-clipboard-text="{{$server.Secret}}" data-tooltip="{{tr "ClickToCopy"}}">
                             <i class="copy icon"></i>
                         </button>
                     </td>
-                    <td>
+                    <td data-label="{{tr "OneKeyInstall"}}">
                         <button class="ui icon green mini button"
                             data-clipboard-text="{{if $.Conf.GRPCHost}}{{if eq $.Conf.Language "zh-CN"}}curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh{{else}}curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/install_en.sh{{end}} -o naza.sh && chmod +x naza.sh && ./naza.sh install_agent {{$.Conf.GRPCHost}} {{if $.Conf.ProxyGRPCPort}}{{$.Conf.ProxyGRPCPort}}{{else}}{{$.Conf.GRPCPort}}{{end}} {{$server.Secret}}{{if $.Conf.TLS}} --tls{{end}}{{if $.Conf.DisableCommandExecuteInInstall}} --disable-command-execute{{end}}{{else}}{{tr "NoDomainAlert"}}{{end}}"
                             data-tooltip="{{tr "ClickToCopy"}}">
@@ -108,17 +109,17 @@ table.ui.basic.table th:nth-child(5) {
                             <i class="apple icon"></i>
                         </button>
                     </td>
-                    <td>
+                    <td data-label="{{tr "Note"}}">
                         {{if $server.Note}}
                             <button class="ui icon green mini button" title="{{ $server.Note }}" onclick="addOrEditServer({{$server.MarshalForDashboard}})"><i class="sticky note icon"></i></button>
                         {{end}}
                     </td>
-                    <td>
+                    <td data-label="{{tr "PublicNote"}}">
                         <button class="ui icon green mini button" title="{{ $server.PublicNote }}" onclick="PublicNoteEditor.open({server: {{$server.MarshalForDashboard}}, saveDirect: true})">
                             <i class="sticky edit icon"></i>
                         </button>
                     </td>
-                    <td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="connectToServer({{$server.ID}})">
                                 <i class="terminal icon"></i>
@@ -285,6 +286,39 @@ document.addEventListener("DOMContentLoaded", function() {
         if (match) {
             btn.setAttribute('data-clipboard-text', match[0]);
         }
+    });
+
+    const mobileIPMedia = window.matchMedia('(max-width: 767px)');
+    const mobileIPTargets = Array.from(document.querySelectorAll('.server-ip-address')).filter(function(target) {
+        const match = target.textContent.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/);
+        if (!match) return false;
+        target.dataset.mobileIpv4 = match[0];
+        target.addEventListener('keydown', function(event) {
+            if (mobileIPMedia.matches && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                target.click();
+            }
+        });
+        return true;
+    });
+    function updateMobileIPCopy() {
+        mobileIPTargets.forEach(function(target) {
+            target.classList.toggle('mobile-ip-copy', mobileIPMedia.matches);
+            if (mobileIPMedia.matches) {
+                target.setAttribute('role', 'button');
+                target.setAttribute('tabindex', '0');
+                target.setAttribute('aria-label', '{{tr "ClickToCopy"}} IPv4');
+            } else {
+                target.removeAttribute('role');
+                target.removeAttribute('tabindex');
+                target.removeAttribute('aria-label');
+            }
+        });
+    }
+    updateMobileIPCopy();
+    mobileIPMedia.addEventListener('change', updateMobileIPCopy);
+    new ClipboardJS('.server-ip-address.mobile-ip-copy', {
+        text: function(target) { return target.dataset.mobileIpv4; }
     });
 });
 </script>

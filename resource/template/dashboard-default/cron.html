@@ -1,16 +1,17 @@
 {{define "dashboard-default/cron"}}
 {{template "common/header" .}}
 {{template "common/menu" .}}
-<div class="nb-container">
+<link rel="stylesheet" href="/static/dashboard-mobile.css?v20261010a">
+<div class="nb-container dashboard-mobile-page">
     <div class="ui container">
         <div class="ui grid">
-            <div class="right floated right aligned twelve wide column">
+            <div class="right floated right aligned twelve wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button" onclick="addOrEditCron()"><i class="add icon"></i>
                     {{tr "AddScheduledTasks"}}
                 </button>
             </div>
         </div>
-        <table class="ui basic table selectable">
+        <table class="ui basic table selectable dashboard-mobile-table dashboard-mobile-details">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -29,19 +30,19 @@
             </thead>
             <tbody>
                 {{range $cron := .Crons}}
-                <tr>
-                    <td>{{$cron.ID}}</td>
-                    <td>{{$cron.Name}}</td>
-                    <td>{{if eq $cron.TaskType 0}}{{tr "CronTask"}}{{else}}{{tr "TriggerTask"}}{{end}}</td>
-                    <td>{{$cron.Scheduler}}</td>
-                    <td>{{$cron.Command}}</td>
-                    <td>{{$cron.NotificationTag}}</td>
-                    <td>{{$cron.PushSuccessful}}</td>
-                    <td>{{if eq $cron.Cover 0}}{{tr "IgnoreAll"}}{{else if eq $cron.Cover 1}}{{tr "CoverAll"}}{{else}}{{tr "ByTrigger"}}{{end}}</td>
-                    <td>{{$cron.ServersRaw}}</td>
-                    <td>{{$cron.LastExecutedAt|tf}}</td>
-                    <td>{{$cron.LastResult}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$cron.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$cron.Name}}</td>
+                    <td data-label="{{tr "TaskType"}}">{{if eq $cron.TaskType 0}}{{tr "CronTask"}}{{else}}{{tr "TriggerTask"}}{{end}}</td>
+                    <td data-label="{{tr "Scheduler"}}">{{$cron.Scheduler}}</td>
+                    <td data-label="{{tr "Command"}}" class="dashboard-mobile-wide">{{$cron.Command}}</td>
+                    <td data-label="{{tr "NotificationMethodGroup"}}">{{$cron.NotificationTag}}</td>
+                    <td data-label="{{tr "PushSuccessfully"}}">{{$cron.PushSuccessful}}</td>
+                    <td data-label="{{tr "Coverage"}}">{{if eq $cron.Cover 0}}{{tr "IgnoreAll"}}{{else if eq $cron.Cover 1}}{{tr "CoverAll"}}{{else}}{{tr "ByTrigger"}}{{end}}</td>
+                    <td data-label="{{tr "SpecificServers"}}">{{$cron.ServersRaw}}</td>
+                    <td data-label="{{tr "LastExecution"}}">{{$cron.LastExecutedAt|tf}}</td>
+                    <td data-label="{{tr "LastResult"}}">{{$cron.LastResult}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="manualTrigger(this, {{$cron.ID}})">
                                 <i class="play icon"></i>

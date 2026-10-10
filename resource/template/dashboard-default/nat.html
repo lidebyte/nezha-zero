@@ -1,16 +1,17 @@
 {{define "dashboard-default/nat"}}
 {{template "common/header" .}}
 {{template "common/menu" .}}
-<div class="nb-container">
+<link rel="stylesheet" href="/static/dashboard-mobile.css?v20261010a">
+<div class="nb-container dashboard-mobile-page">
     <div class="ui container">
         <div class="ui grid">
-            <div class="right floated right aligned twelve wide column">
+            <div class="right floated right aligned twelve wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button" onclick="addOrEditNAT()"><i
                         class="add icon"></i> {{tr "Add"}}
                 </button>
             </div>
         </div>
-        <table class="ui basic table selectable">
+        <table class="ui basic table selectable dashboard-mobile-table dashboard-mobile-details">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -23,13 +24,13 @@
             </thead>
             <tbody>
                 {{range $item := .NAT}}
-                <tr>
-                    <td>{{$item.ID}}</td>
-                    <td>{{$item.Name}}</td>
-                    <td>{{$item.ServerID}}</td>
-                    <td>{{$item.Host}}</td>
-                    <td>{{$item.Domain}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$item.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$item.Name}}</td>
+                    <td data-label="Agent ID">{{$item.ServerID}}</td>
+                    <td data-label="{{tr "LocalService"}}" class="dashboard-mobile-wide">{{$item.Host}}</td>
+                    <td data-label="{{tr "BindHostname"}}" class="dashboard-mobile-wide">{{$item.Domain}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="addOrEditNAT({{$item}})">
                                 <i class="edit icon"></i>

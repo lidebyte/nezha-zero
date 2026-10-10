@@ -1,6 +1,7 @@
 {{define "dashboard-default/subscription"}}
 {{template "common/header" .}}
 {{template "common/menu" .}}
+<link rel="stylesheet" href="/static/dashboard-mobile.css?v20261010a">
 <style>
 .subscription-select-column {
     width: 1%;
@@ -164,7 +165,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
     }
 }
 </style>
-<div class="nb-container">
+<div class="nb-container dashboard-mobile-page">
     <div class="ui container">
         {{$hasSubscriptionNotes := false}}
         {{range $subscription := .Subscriptions}}{{if $subscription.Note}}{{$hasSubscriptionNotes = true}}{{end}}{{end}}
@@ -177,7 +178,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                     </div>
                 </div>
             </div>
-            <div class="right floated right aligned eight wide column">
+            <div class="right floated right aligned eight wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button" onclick="batchEditSubscriptionGroup()">
                     <i class="edit icon"></i> {{tr "BatchEditSubscriptionGroup"}}
                 </button>
@@ -186,11 +187,11 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                 </button>
             </div>
         </div>
-        <table class="ui basic table">
+        <table class="ui basic table dashboard-mobile-table">
                 <thead>
                     <tr>
-                        <th class="subscription-select-column"><button onclick="checkAllSubscriptions()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
-                        <th>ID <span class="subscription-id-hint" data-tooltip="{{tr "SubscriptionIDHint"}}" data-position="top left"><i class="question circle outline icon"></i></span></th>
+                        <th class="subscription-select-column dashboard-mobile-control"><button onclick="checkAllSubscriptions()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
+                        <th class="dashboard-mobile-control">ID <span class="subscription-id-hint" data-tooltip="{{tr "SubscriptionIDHint"}}" data-position="top left"><i class="question circle outline icon"></i></span></th>
                         <th>{{tr "Name"}}</th>
                         <th class="subscription-group-header">
                             {{tr "SubscriptionGroup"}}
@@ -217,17 +218,17 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                 <tbody>
                     {{range $subscription := .Subscriptions}}
                     <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}" data-display-amount="{{$subscription.DisplayAmount}}">
-                        <td class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
-                        <td>{{if $subscription.Manual}}{{$subscription.ID}}({{$subscription.DisplayIndex}}){{else}}S{{$subscription.ID}}{{end}}</td>
-                        <td>{{$subscription.Name}}</td>
-                        <td>{{$subscription.Group}}</td>
-                        <td>{{if $subscription.StartDate}}{{$subscription.StartDate}}{{else}}-{{end}}</td>
-                        <td>{{if $subscription.EndDate}}{{$subscription.EndDate}}{{else}}-{{end}}</td>
-                        <td class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if $subscription.Lifetime}}subscription-days-lifetime{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if $subscription.Lifetime}}{{tr "Lifetime"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
-                        <td{{if not $subscription.Enabled}} class="subscription-price-disabled"{{end}}>{{if $subscription.DisplayAmount}}{{$subscription.DisplayAmount}}{{if $subscription.DisplayUnit}} {{$subscription.DisplayUnit}}{{end}}{{if $subscription.OriginalAmount}} <span class="subscription-original-price">({{$subscription.OriginalAmount}}{{if $subscription.OriginalUnit}} {{$subscription.OriginalUnit}}{{end}})</span>{{end}}{{else if $subscription.Price}}{{$subscription.Price}}{{if $subscription.Currency}} {{$subscription.Currency}}{{end}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
-                        <td>{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
-                        {{if $hasSubscriptionNotes}}<td>{{if $subscription.Note}}<span class="subscription-note" title="{{$subscription.Note}}">{{$subscription.Note}}</span>{{else}}-{{end}}</td>{{end}}
-                        <td>
+                        <td data-label="{{tr "SelectAll"}}" class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
+                        <td data-label="ID">{{if $subscription.Manual}}{{$subscription.ID}}({{$subscription.DisplayIndex}}){{else}}S{{$subscription.ID}}{{end}}</td>
+                        <td data-label="{{tr "Name"}}">{{$subscription.Name}}</td>
+                        <td data-label="{{tr "SubscriptionGroup"}}">{{$subscription.Group}}</td>
+                        <td data-label="{{tr "SubscriptionStartDate"}}">{{if $subscription.StartDate}}{{$subscription.StartDate}}{{else}}-{{end}}</td>
+                        <td data-label="{{tr "SubscriptionEndDate"}}">{{if $subscription.EndDate}}{{$subscription.EndDate}}{{else}}-{{end}}</td>
+                        <td data-label="{{tr "RemainingDays"}}" class="{{if not $subscription.Enabled}}subscription-days-disabled{{else if $subscription.Lifetime}}subscription-days-lifetime{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}subscription-days-expired{{else if le $subscription.RemainingDays 3}}subscription-days-danger{{else if le $subscription.RemainingDays 7}}subscription-days-warning{{end}}{{end}}">{{if not $subscription.Enabled}}{{tr "Disabled"}}{{else if $subscription.Lifetime}}{{tr "Lifetime"}}{{else if $subscription.HasEndDate}}{{if lt $subscription.RemainingDays 0}}{{tr "Expired"}}{{else}}{{$subscription.RemainingDays}}{{end}}{{else}}-{{end}}</td>
+                        <td data-label="{{if $.Conf.ShowMonthlyPrice}}{{tr "PriceMonthly"}}{{else}}{{tr "Price"}}{{end}}"{{if not $subscription.Enabled}} class="subscription-price-disabled"{{end}}>{{if $subscription.DisplayAmount}}{{$subscription.DisplayAmount}}{{if $subscription.DisplayUnit}} {{$subscription.DisplayUnit}}{{end}}{{if $subscription.OriginalAmount}} <span class="subscription-original-price">({{$subscription.OriginalAmount}}{{if $subscription.OriginalUnit}} {{$subscription.OriginalUnit}}{{end}})</span>{{end}}{{else if $subscription.Price}}{{$subscription.Price}}{{if $subscription.Currency}} {{$subscription.Currency}}{{end}}{{else}}-{{end}}{{if $subscription.CostReason}} <span class="subscription-cost-hint" data-tooltip="{{tr $subscription.CostReason}}" data-position="top center"><i class="exclamation circle icon"></i></span>{{end}}</td>
+                        <td data-label="{{tr "PriceUnit"}}">{{if $subscription.PriceUnitLabel}}{{$subscription.PriceUnitLabel}}{{else}}-{{end}}</td>
+                        {{if $hasSubscriptionNotes}}<td data-label="{{tr "Note"}}">{{if $subscription.Note}}<span class="subscription-note" title="{{$subscription.Note}}">{{$subscription.Note}}</span>{{else}}-{{end}}</td>{{end}}
+                        <td data-label="{{tr "Administration"}}">
                             <div class="ui mini icon buttons">
                                 <button type="button" class="ui button" onclick="addOrEditSubscription({{$subscription.FormData}})"><i class="edit icon"></i></button>
                                 {{if $subscription.Link}}<a class="ui button" href="{{$subscription.Link}}" target="_blank" rel="noopener noreferrer" title="{{tr "OpenLink"}}"><i class="linkify icon"></i></a>{{end}}

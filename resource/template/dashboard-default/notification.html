@@ -1,16 +1,17 @@
 {{define "dashboard-default/notification"}}
 {{template "common/header" .}}
 {{template "common/menu" .}}
-<div class="nb-container">
+<link rel="stylesheet" href="/static/dashboard-mobile.css?v20261010a">
+<div class="nb-container dashboard-mobile-page">
     <div class="ui container">
         <div class="ui grid">
-            <div class="right floated right aligned twelve wide column">
+            <div class="right floated right aligned twelve wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button" onclick="addOrEditNotification()"><i
                         class="add icon"></i> {{tr "AddNotificationMethod"}}
                 </button>
             </div>
         </div>
-        <table class="ui basic table selectable">
+        <table class="ui basic table selectable dashboard-mobile-table dashboard-mobile-details">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -24,14 +25,14 @@
             </thead>
             <tbody>
                 {{range $notification := .Notifications}}
-                <tr>
-                    <td>{{$notification.ID}}</td>
-                    <td>{{$notification.Name}}</td>
-                    <td>{{$notification.Tag}}</td>
-                    <td>{{if eq $notification.Type 1}}Telegram{{else if eq $notification.Type 2}}Email{{else}}Webhook{{end}}</td>
-                    <td>{{if eq $notification.Type 1}}{{$notification.TelegramChatID}}{{else if eq $notification.Type 2}}{{$notification.EmailTo}}{{else}}{{$notification.URL}}{{end}}</td>
-                    <td>{{if eq $notification.Type 0}}{{$notification.VerifySSL}}{{else}}-{{end}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$notification.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$notification.Name}}</td>
+                    <td data-label="{{tr "Tag"}}">{{$notification.Tag}}</td>
+                    <td data-label="{{tr "NotificationMethodType"}}">{{if eq $notification.Type 1}}Telegram{{else if eq $notification.Type 2}}Email{{else}}Webhook{{end}}</td>
+                    <td data-label="{{tr "NotificationTarget"}}" class="dashboard-mobile-wide">{{if eq $notification.Type 1}}{{$notification.TelegramChatID}}{{else if eq $notification.Type 2}}{{$notification.EmailTo}}{{else}}{{$notification.URL}}{{end}}</td>
+                    <td data-label="{{tr "VerifySSL"}}">{{if eq $notification.Type 0}}{{$notification.VerifySSL}}{{else}}-{{end}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="addOrEditNotification({{$notification}})">
                                 <i class="edit icon"></i>
@@ -47,14 +48,14 @@
             </tbody>
         </table>
         <div class="ui grid">
-            <div class="right floated right aligned twelve wide column">
+            <div class="right floated right aligned twelve wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button" onclick="addOrEditAlertRule()"><i
                         class="add icon"></i>
                     {{tr "AddNotificationRule"}}
                 </button>
             </div>
         </div>
-        <table class="ui basic table selectable">
+        <table class="ui basic table selectable dashboard-mobile-table dashboard-mobile-details">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -71,17 +72,17 @@
             </thead>
             <tbody id="alertRuleRows">
                 {{range $rule := .AlertRules}}
-                <tr>
-                    <td>{{$rule.ID}}</td>
-                    <td>{{$rule.Name}}</td>
-                    <td>{{tr "StandardAlert"}}</td>
-                    <td>{{$rule.NotificationTag}}</td>
-                    <td>{{if eq $rule.TriggerMode  0}}{{tr "ModeAlwaysTrigger"}}{{else}}{{tr "ModeOnetimeTrigger"}}{{end}}
-                    <td>{{$rule.RulesRaw}}</td>
-                    <td>{{$rule.FailTriggerTasksRaw}}</td>
-                    <td>{{$rule.RecoverTriggerTasksRaw}}</td>
-                    <td>{{$rule.Enable}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$rule.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$rule.Name}}</td>
+                    <td data-label="{{tr "AlertType"}}">{{tr "StandardAlert"}}</td>
+                    <td data-label="{{tr "NotificationMethodGroup"}}">{{$rule.NotificationTag}}</td>
+                    <td data-label="{{tr "NotificationTriggerMode"}}">{{if eq $rule.TriggerMode  0}}{{tr "ModeAlwaysTrigger"}}{{else}}{{tr "ModeOnetimeTrigger"}}{{end}}
+                    <td data-label="{{tr "Rules"}}" class="dashboard-mobile-wide">{{$rule.RulesRaw}}</td>
+                    <td data-label="{{tr "FailTriggerTasks"}}">{{$rule.FailTriggerTasksRaw}}</td>
+                    <td data-label="{{tr "RecoverTriggerTasks"}}">{{$rule.RecoverTriggerTasksRaw}}</td>
+                    <td data-label="{{tr "Enable"}}">{{$rule.Enable}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="addOrEditAlertRule({{$rule}})">
                                 <i class="edit icon"></i>
@@ -95,17 +96,17 @@
                 </tr>
                 {{end}}
                 {{range $rule := .ExpirationRules}}
-                <tr>
-                    <td>{{$rule.ID}}</td>
-                    <td>{{$rule.Name}}</td>
-                    <td>{{tr "ExpirationAlert"}}</td>
-                    <td>{{$rule.NotificationTag}}</td>
-                    <td>{{if $rule.ExpirationDailyReminder}}{{tr "ExpirationReminderDaily"}}{{else}}{{tr "ExpirationReminderExactDay"}}{{end}}</td>
-                    <td>{{tr "AdvanceReminderDays"}}: {{$rule.ExpirationAdvanceDays}}; {{if eq $rule.ExpirationCover 1}}{{tr "IgnoreAll"}}{{else}}{{tr "CoverAll"}}{{end}}; {{$rule.ExpirationServerIDs}}</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>{{$rule.Enable}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$rule.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$rule.Name}}</td>
+                    <td data-label="{{tr "AlertType"}}">{{tr "ExpirationAlert"}}</td>
+                    <td data-label="{{tr "NotificationMethodGroup"}}">{{$rule.NotificationTag}}</td>
+                    <td data-label="{{tr "NotificationTriggerMode"}}">{{if $rule.ExpirationDailyReminder}}{{tr "ExpirationReminderDaily"}}{{else}}{{tr "ExpirationReminderExactDay"}}{{end}}</td>
+                    <td data-label="{{tr "Rules"}}" class="dashboard-mobile-wide">{{tr "AdvanceReminderDays"}}: {{$rule.ExpirationAdvanceDays}}; {{if eq $rule.ExpirationCover 1}}{{tr "IgnoreAll"}}{{else}}{{tr "CoverAll"}}{{end}}; {{$rule.ExpirationServerIDs}}</td>
+                    <td data-label="{{tr "FailTriggerTasks"}}">-</td>
+                    <td data-label="{{tr "RecoverTriggerTasks"}}">-</td>
+                    <td data-label="{{tr "Enable"}}">{{$rule.Enable}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="addOrEditAlertRule({{$rule}}, 1)">
                                 <i class="edit icon"></i>
@@ -119,17 +120,17 @@
                 </tr>
                 {{end}}
                 {{range $rule := .SubscriptionExpirationRules}}
-                <tr>
-                    <td>{{$rule.ID}}</td>
-                    <td>{{$rule.Name}}</td>
-                    <td>{{tr "SubscriptionExpirationAlert"}}</td>
-                    <td>{{$rule.NotificationTag}}</td>
-                    <td>{{if $rule.ExpirationDailyReminder}}{{tr "ExpirationReminderDaily"}}{{else}}{{tr "ExpirationReminderExactDay"}}{{end}}</td>
-                    <td>{{tr "AdvanceReminderDays"}}: {{$rule.ExpirationAdvanceDays}}; {{if eq $rule.ExpirationCover 1}}{{tr "IgnoreAll"}}{{else}}{{tr "CoverAll"}}{{end}}; {{$rule.ExpirationServerIDs}}</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>{{$rule.Enable}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$rule.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$rule.Name}}</td>
+                    <td data-label="{{tr "AlertType"}}">{{tr "SubscriptionExpirationAlert"}}</td>
+                    <td data-label="{{tr "NotificationMethodGroup"}}">{{$rule.NotificationTag}}</td>
+                    <td data-label="{{tr "NotificationTriggerMode"}}">{{if $rule.ExpirationDailyReminder}}{{tr "ExpirationReminderDaily"}}{{else}}{{tr "ExpirationReminderExactDay"}}{{end}}</td>
+                    <td data-label="{{tr "Rules"}}" class="dashboard-mobile-wide">{{tr "AdvanceReminderDays"}}: {{$rule.ExpirationAdvanceDays}}; {{if eq $rule.ExpirationCover 1}}{{tr "IgnoreAll"}}{{else}}{{tr "CoverAll"}}{{end}}; {{$rule.ExpirationServerIDs}}</td>
+                    <td data-label="{{tr "FailTriggerTasks"}}">-</td>
+                    <td data-label="{{tr "RecoverTriggerTasks"}}">-</td>
+                    <td data-label="{{tr "Enable"}}">{{$rule.Enable}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="addOrEditAlertRule({{$rule}}, 2)"><i class="edit icon"></i></button>
                             <button class="ui button" onclick="showConfirm('{{tr "DeleteSubscriptionReminderRule"}}','{{tr "ConfirmDeleteSubscriptionReminderRule"}}',deleteRequest,'/api/alert-rule/'+{{$rule.ID}})"><i class="trash alternate outline icon"></i></button>

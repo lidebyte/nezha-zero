@@ -11,6 +11,10 @@
 <script src="/static/semantic-ui-alerts.min.js"></script>
 <script src="/static/cdn/vue@2.7.16/dist/vue.min.js"></script>
 <script src="/static/main.js?v20260919"></script>
+{{if .IsAdminPage}}
+<link rel="stylesheet" href="/static/dashboard-mobile-modal.css?v20261011a">
+<script src="/static/dashboard-mobile-modal.js?v20261011a" data-close-label="{{tr "Cancel"}}"></script>
+{{end}}
 <script>
     (function () {
         updateLang({{.LANG }});

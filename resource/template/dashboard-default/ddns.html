@@ -1,16 +1,17 @@
 {{define "dashboard-default/ddns"}}
 {{template "common/header" .}}
 {{template "common/menu" .}}
-<div class="nb-container">
+<link rel="stylesheet" href="/static/dashboard-mobile.css?v20261010a">
+<div class="nb-container dashboard-mobile-page">
     <div class="ui container">
         <div class="ui grid">
-            <div class="right floated right aligned twelve wide column">
+            <div class="right floated right aligned twelve wide column dashboard-mobile-toolbar">
                 <button class="ui right labeled nezha-primary-btn icon button" onclick="addOrEditDDNS()"><i
                         class="add icon"></i> {{tr "AddDDNSProfile"}}
                 </button>
             </div>
         </div>
-        <table class="ui basic table selectable">
+        <table class="ui basic table selectable dashboard-mobile-table dashboard-mobile-details">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -25,15 +26,15 @@
             </thead>
             <tbody>
                 {{range $item := .DDNS}}
-                <tr>
-                    <td>{{$item.ID}}</td>
-                    <td>{{$item.Name}}</td>
-                    <td>{{$item.EnableIPv4}}</td>
-                    <td>{{$item.EnableIPv6}}</td>
-                    <td>{{index $.ProviderMap $item.Provider}}</td>
-                    <td>{{$item.DomainsRaw}}</td>
-                    <td>{{$item.MaxRetries}}</td>
-                    <td>
+                <tr class="dashboard-mobile-detail-row">
+                    <td data-label="ID">{{$item.ID}}</td>
+                    <td data-label="{{tr "Name"}}">{{$item.Name}}</td>
+                    <td data-label="{{tr "EnableIPv4"}}">{{$item.EnableIPv4}}</td>
+                    <td data-label="{{tr "EnableIPv6"}}">{{$item.EnableIPv6}}</td>
+                    <td data-label="{{tr "DDNSProvider"}}">{{index $.ProviderMap $item.Provider}}</td>
+                    <td data-label="{{tr "DDNSDomain"}}" class="dashboard-mobile-wide">{{$item.DomainsRaw}}</td>
+                    <td data-label="{{tr "MaxRetries"}}">{{$item.MaxRetries}}</td>
+                    <td data-label="{{tr "Administration"}}">
                         <div class="ui mini icon buttons">
                             <button class="ui button" onclick="addOrEditDDNS({{$item}})">
                                 <i class="edit icon"></i>

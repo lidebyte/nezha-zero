@@ -733,7 +733,8 @@ function renderSubscriptionCosts(elementID, costs, format) {
         nodes.push(item);
     });
     nodes.push(parts[1] || '');
-    element.replaceChildren(...nodes);
+    element.textContent = '';
+    element.append(...nodes);
 }
 
 function subscriptionDueLabel(days) {
@@ -759,7 +760,7 @@ function renderUpcomingSubscriptions() {
         return dateOrder || subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
     }).slice(0, 3);
     const list = document.getElementById('subscriptionUpcomingList');
-    list.replaceChildren();
+    list.textContent = '';
     upcoming.forEach(function (row) {
         const days = parseInt(row.dataset.remainingDays, 10) || 0;
         const level = subscriptionDueLevel(days);

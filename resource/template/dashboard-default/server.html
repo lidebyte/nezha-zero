@@ -311,7 +311,11 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
     updateMobileIPCopy();
-    mobileIPMedia.addEventListener('change', updateMobileIPCopy);
+    if (mobileIPMedia.addEventListener) {
+        mobileIPMedia.addEventListener('change', updateMobileIPCopy);
+    } else {
+        mobileIPMedia.addListener(updateMobileIPCopy);
+    }
     new ClipboardJS('.server-ip-address.mobile-ip-copy', {
         text: function(target) { return target.dataset.mobileIpv4; }
     });

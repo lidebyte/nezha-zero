@@ -36,5 +36,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', updateCloseButtons);
-  mobileMedia.addEventListener('change', updateCloseButtons);
+  if (mobileMedia.addEventListener) {
+    mobileMedia.addEventListener('change', updateCloseButtons);
+  } else {
+    mobileMedia.addListener(updateCloseButtons);
+  }
 })();

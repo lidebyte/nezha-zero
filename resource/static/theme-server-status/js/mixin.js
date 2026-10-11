@@ -28,10 +28,11 @@ const mixinsVue = {
         this.colors = this.theme == "dark" ? this.colorsDark : this.colorsLight;
         this.setBenchmarkHeight();
         window.addEventListener('scroll', this.handleScroll);
-        window.addEventListener('resize', this.setBenchmarkHeight());
+        window.addEventListener('resize', this.setBenchmarkHeight);
     },
     destroyed() {
         window.removeEventListener('scroll', this.handleScroll);
+        window.removeEventListener('resize', this.setBenchmarkHeight);
         if (this._systemThemeQuery.addEventListener) {
             this._systemThemeQuery.removeEventListener('change', this.handleSystemThemeChange);
         } else {

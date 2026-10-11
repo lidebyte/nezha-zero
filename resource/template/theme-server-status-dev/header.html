@@ -80,9 +80,12 @@
         .navbar .navbar-nav > li.nav-user-logout > a:focus {
             color: #e5534b;
         }
-        @media (min-width: 768px) {
+        @media (hover: hover) {
             .navbar .navbar-nav > li.nav-user-menu:hover > .dropdown-menu {
                 display: block;
+            }
+            .navbar .navbar-nav > li.nav-user-menu.open:not(:hover) > .dropdown-menu {
+                display: none;
             }
         }
     </style>

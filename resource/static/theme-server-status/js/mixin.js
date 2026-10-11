@@ -33,10 +33,12 @@ const mixinsVue = {
     destroyed() {
         window.removeEventListener('scroll', this.handleScroll);
         window.removeEventListener('resize', this.setBenchmarkHeight);
-        if (this._systemThemeQuery.addEventListener) {
-            this._systemThemeQuery.removeEventListener('change', this.handleSystemThemeChange);
-        } else {
-            this._systemThemeQuery.removeListener(this.handleSystemThemeChange);
+        if (this._systemThemeQuery) {
+            if (this._systemThemeQuery.addEventListener) {
+                this._systemThemeQuery.removeEventListener('change', this.handleSystemThemeChange);
+            } else {
+                this._systemThemeQuery.removeListener(this.handleSystemThemeChange);
+            }
         }
     },
     methods: {

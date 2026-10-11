@@ -82,7 +82,7 @@
     white-space: normal;
   }
 
-  .dashboard-mobile-table .subscription-group-filter > .filter.icon,
+  .dashboard-mobile-table .subscription-group-filter > .icon,
   .dashboard-mobile-table .subscription-remaining-sort > .icon,
   .dashboard-mobile-table .subscription-price-sort > .icon {
     font-size: 1em;

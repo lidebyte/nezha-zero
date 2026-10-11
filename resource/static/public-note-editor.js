@@ -653,6 +653,9 @@
       })
       .on("input.pneManual", function () {
         var $input = $(this);
+        if (!trim($input.val())) {
+          setWheelEmpty(state.$modal.find('.pne-wheel-date[data-target="' + $input.data("target") + '"]'));
+        }
         // Defer reformatting to the next frame so the browser finishes
         // applying its own character insertion first. Mutating value()
         // synchronously inside the input event makes some IMEs/keyboards
@@ -681,9 +684,7 @@
         var $wheel = state.$modal.find('.pne-wheel-date[data-target="' + target + '"]');
         var raw = trim($input.val());
         if (!raw) {
-          state.$modal.find('input[name="' + target + '"]').val("");
-          updateDateClearVisibility(target);
-          updatePreview();
+          setWheelEmpty($wheel);
           return;
         }
         updateDateClearVisibility(target);

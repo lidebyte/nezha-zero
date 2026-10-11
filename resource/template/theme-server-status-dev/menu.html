@@ -46,8 +46,7 @@
                         <li><a @click="logOut({{.Admin.ID}})"><i class="logout icon"></i>{{tr "Logout"}}</a></li>
                     </ul>
                 </li>
-                <li class="nav-user-admin visible-xs"><a href="/server"><i class="cog icon"></i>{{tr "AdminPanel" }}</a></li>
-                <li class="nav-user-logout visible-xs"><a href="javascript:;" @click.prevent="logOut({{.Admin.ID}})"><i class="logout icon"></i>{{tr "Logout"}}</a></li>
+                <li class="nav-user-admin visible-xs"><a href="/server"><i class="terminal icon"></i>{{tr "AdminPanel" }}</a></li>
                 {{else}}
                 <li><a href="/login"><i class="sign-in icon"></i>{{tr "Login" }}</a></li>
                 {{end}}

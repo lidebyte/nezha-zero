@@ -1258,7 +1258,7 @@ other = "该订阅是从服务器管理同步，账单信息请到服务器页�
 other = "月度订阅费用"
 
 [YearlySubscriptionCost]
-other = "年度订阅费用"
+other = "年度费用"
 
 [SubscriptionCostInvalidPrice]
 other = "未计入月度和年度费用统计：价格格式无法识别"
@@ -1366,10 +1366,19 @@ other = "确认删除此订阅到期提醒规则？"
 other = "[订阅到期提醒]"
 
 [UpcomingSubscriptions]
-other = "即将到期的订阅"
+other = "即将到期"
 
-[SubscriptionDue]
-other = "到期"
+[SubscriptionStatistics]
+other = "统计"
+
+[SubscriptionMonthlyEquivalent]
+other = "月度 {{.Value}}"
+
+[SubscriptionDueToday]
+other = "今天到期"
+
+[SubscriptionDueInDays]
+other = "{{.Value}} 天后到期"
 
 [SubscriptionExpirationReminderIntro]
 other = "以下手动订阅即将到期："

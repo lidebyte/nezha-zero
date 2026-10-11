@@ -1258,7 +1258,7 @@ other = "該訂閱是從伺服器管理同步，帳單資訊請到伺服器頁�
 other = "月度訂閱費用"
 
 [YearlySubscriptionCost]
-other = "年度訂閱費用"
+other = "年度費用"
 
 [SubscriptionCostInvalidPrice]
 other = "未計入月度和年度費用統計：價格格式無法識別"
@@ -1364,6 +1364,21 @@ other = "確認刪除此訂閱到期提醒規則？"
 
 [SubscriptionExpirationReminderTitle]
 other = "[訂閱到期提醒]"
+
+[UpcomingSubscriptions]
+other = "即將到期"
+
+[SubscriptionStatistics]
+other = "統計"
+
+[SubscriptionMonthlyEquivalent]
+other = "月度 {{.Value}}"
+
+[SubscriptionDueToday]
+other = "今天到期"
+
+[SubscriptionDueInDays]
+other = "{{.Value}} 天後到期"
 
 [SubscriptionExpirationReminderIntro]
 other = "以下手動訂閱即將到期："

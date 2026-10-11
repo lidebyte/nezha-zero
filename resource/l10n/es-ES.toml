@@ -1250,7 +1250,7 @@ other = "Esta suscripción se sincroniza desde la gestión de servidores. Edita 
 other = "Coste mensual de suscripciones"
 
 [YearlySubscriptionCost]
-other = "Coste anual de suscripciones"
+other = "Coste anual"
 
 [SubscriptionCostInvalidPrice]
 other = "Excluida de los totales mensuales y anuales: el formato del precio no es válido"
@@ -1356,6 +1356,22 @@ other = "¿Eliminar esta regla de vencimiento?"
 
 [SubscriptionExpirationReminderTitle]
 other = "[Recordatorio de vencimiento de suscripción]"
+
+[UpcomingSubscriptions]
+other = "Próximos vencimientos"
+
+[SubscriptionStatistics]
+other = "Estadísticas"
+
+[SubscriptionMonthlyEquivalent]
+other = "Mensual {{.Value}}"
+
+[SubscriptionDueToday]
+other = "Vence hoy"
+
+[SubscriptionDueInDays]
+one = "Vence en {{.Value}} día"
+other = "Vence en {{.Value}} días"
 
 [SubscriptionExpirationReminderIntro]
 other = "Las siguientes suscripciones manuales están por vencer:"

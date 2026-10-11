@@ -1259,7 +1259,7 @@ other = "This subscription is synced from server management. Edit billing detail
 other = "Monthly subscription cost"
 
 [YearlySubscriptionCost]
-other = "Yearly subscription cost"
+other = "Yearly cost"
 
 [SubscriptionCostInvalidPrice]
 other = "Excluded from monthly and yearly totals: price format is invalid"
@@ -1369,8 +1369,18 @@ other = "[Subscription Expiration Reminder]"
 [UpcomingSubscriptions]
 other = "Upcoming Subscriptions"
 
-[SubscriptionDue]
-other = "due"
+[SubscriptionStatistics]
+other = "Statistics"
+
+[SubscriptionMonthlyEquivalent]
+other = "Monthly {{.Value}}"
+
+[SubscriptionDueToday]
+other = "Due today"
+
+[SubscriptionDueInDays]
+one = "Due in {{.Value}} day"
+other = "Due in {{.Value}} days"
 
 [SubscriptionExpirationReminderIntro]
 other = "The following manual subscriptions are about to expire:"

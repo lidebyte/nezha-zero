@@ -7,67 +7,131 @@
     width: 1%;
     white-space: nowrap;
 }
-.subscription-summary {
-    display: flex;
-    align-items: flex-start;
-    gap: 2.5rem;
-    color: rgba(0,0,0,.55);
+.subscription-overview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 280px);
+    gap: .5rem;
 }
-.subscription-summary-block {
-    white-space: nowrap;
-}
-.subscription-overview .subscription-summary-block {
-    max-width: 100%;
-    white-space: normal;
-}
-.subscription-upcoming {
-    flex: 0 1 420px;
-    max-width: 420px;
-    min-width: 0;
-}
-.subscription-upcoming[hidden] {
-    display: none;
+.subscription-overview-grid.has-upcoming {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 3fr);
 }
 .subscription-upcoming-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .4rem;
+    gap: .5rem;
 }
-.subscription-upcoming-card {
+.subscription-upcoming-list[hidden] {
+    display: none;
+}
+.subscription-tile {
+    --subscription-tile-accent: rgba(0,0,0,.15);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .05rem;
     min-width: 0;
-    padding: .45rem .6rem;
-    border: 1px solid #e5e9ef;
+    padding: .3rem .65rem .3rem .85rem;
+    border: 1px solid rgba(34,36,38,.15);
     border-radius: 6px;
     background: #fff;
+    overflow: hidden;
+}
+.subscription-tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 3px;
+    background: var(--subscription-tile-accent);
+}
+.subscription-tile-cost {
+    --subscription-tile-accent: #0338d6;
+}
+.subscription-tile.is-warning {
+    --subscription-tile-accent: #fed12c;
+}
+.subscription-tile.is-danger {
+    --subscription-tile-accent: #ee1c25;
+}
+.subscription-tile-label,
+.subscription-tile-meta {
+    color: rgba(0,0,0,.55);
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+.subscription-tile-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.subscription-tile-meta {
     overflow-wrap: anywhere;
 }
-.subscription-upcoming-name {
-    margin-bottom: .2rem;
+.subscription-tile-value {
     color: rgba(0,0,0,.87);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     line-height: 1.35;
+    overflow-wrap: anywhere;
 }
-.subscription-upcoming-date {
-    font-size: 11px;
-    line-height: 1.4;
+.subscription-tile-value[data-currency-count="2"] {
+    font-size: 14px;
 }
-.subscription-upcoming-price {
-    color: rgba(0,0,0,.87);
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.4;
+.subscription-tile-value[data-currency-count="many"] {
+    font-size: 12.5px;
 }
-html[nz-theme='dark'] .subscription-upcoming-card {
+#subscriptionStatMonthly[data-currency-count="0"] {
+    visibility: hidden;
+}
+.subscription-cost-item {
+    white-space: nowrap;
+}
+.subscription-cost-currency {
+    margin-left: .25em;
+}
+.subscription-tile-value .subscription-cost-separator {
+    color: rgba(0,0,0,.35);
+    font-weight: 400;
+}
+html[nz-theme='dark'] .subscription-tile-value .subscription-cost-separator {
+    color: rgba(255,255,255,.4);
+}
+.subscription-tile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.subscription-tile-price::before {
+    content: ' · ';
+}
+html[nz-theme='dark'] .subscription-tile {
+    --subscription-tile-accent: rgba(255,255,255,.25);
     background: #282828;
     border-color: rgba(255,255,255,.18);
 }
-html[nz-theme='dark'] .subscription-upcoming-name,
-html[nz-theme='dark'] .subscription-upcoming-price {
+html[nz-theme='dark'] .subscription-tile-cost {
+    --subscription-tile-accent: #2f5fe2;
+}
+html[nz-theme='dark'] .subscription-tile.is-warning {
+    --subscription-tile-accent: #fed12c;
+}
+html[nz-theme='dark'] .subscription-tile.is-danger {
+    --subscription-tile-accent: #ee1c25;
+}
+html[nz-theme='dark'] .subscription-tile-label,
+html[nz-theme='dark'] .subscription-tile-meta {
+    color: rgba(255,255,255,.6);
+}
+html[nz-theme='dark'] .subscription-tile-value {
     color: rgba(255,255,255,.87);
 }
-html[nz-theme='dark'] .subscription-upcoming-date {
-    color: rgba(255,255,255,.6);
+html[nz-theme='dark'] .subscription-tile-label.subscription-days-warning {
+    color: #fed12c;
+}
+html[nz-theme='dark'] .subscription-tile-label.subscription-days-danger {
+    color: #ee1c25;
 }
 .subscription-group-header {
     cursor: pointer;
@@ -220,14 +284,6 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
         width: auto !important;
         min-width: 0;
     }
-    .subscription-overview .subscription-summary {
-        align-items: center;
-        gap: 1.25rem;
-    }
-    .subscription-overview .subscription-summary-block {
-        flex: 0 1 200px;
-        min-width: 0;
-    }
     .subscription-header-grid > .dashboard-mobile-toolbar {
         display: flex;
         align-items: center;
@@ -244,31 +300,41 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
         align-items: stretch;
     }
 }
+@media only screen and (max-width: 1100px) {
+    .subscription-overview-grid.has-upcoming {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
 @media only screen and (max-width: 767px) {
-    .subscription-summary {
-        flex-wrap: wrap;
-        gap: .75rem 2rem;
-    }
-    .subscription-overview .subscription-summary {
-        flex-direction: column;
-        gap: .75rem;
-    }
-    .subscription-upcoming {
-        flex: none;
-        width: 100%;
-        max-width: none;
-    }
+    .subscription-overview-grid,
     .subscription-upcoming-list {
-        gap: .4rem;
+        gap: .45rem;
     }
-    .subscription-upcoming-card {
-        padding: .4rem .45rem;
+    .subscription-overview-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .subscription-tile {
+        padding: .3rem .5rem .3rem .7rem;
+    }
+    .subscription-upcoming-list .subscription-tile-value {
+        display: -webkit-box;
+        font-size: 13px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    .subscription-tile-price {
+        display: block;
+    }
+    .subscription-tile-price::before {
+        content: none;
     }
 }
 @media only screen and (max-width: 360px) {
-    .subscription-upcoming-date {
-        font-size: 10px;
-        white-space: nowrap;
+    .subscription-tile-label,
+    .subscription-tile-meta {
+        font-size: 11px;
     }
 }
 </style>
@@ -278,14 +344,13 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
         {{range $subscription := .Subscriptions}}{{if $subscription.Note}}{{$hasSubscriptionNotes = true}}{{end}}{{end}}
         <div class="ui stackable middle aligned grid subscription-header-grid">
             <div class="left aligned sixteen wide column subscription-overview">
-                <div class="subscription-summary">
-                    <div class="subscription-summary-block">
-                        {{tr "YearlySubscriptionCost"}}: <span id="subscriptionStatYearly">-</span><br>
-                        <small>{{tr "MonthlySubscriptionCost"}}: <span id="subscriptionStatMonthly">-</span></small>
-                    </div>
-                    <section id="subscriptionUpcoming" class="subscription-upcoming" aria-label="{{tr "UpcomingSubscriptions"}}" hidden>
-                        <div id="subscriptionUpcomingList" class="subscription-upcoming-list"></div>
-                    </section>
+                <div id="subscriptionOverviewGrid" class="subscription-overview-grid">
+                    <article class="subscription-tile subscription-tile-cost">
+                        <div class="subscription-tile-label">{{tr "YearlySubscriptionCost"}}</div>
+                        <div id="subscriptionStatYearly" class="subscription-tile-value">-</div>
+                        <div id="subscriptionStatMonthly" class="subscription-tile-meta">-</div>
+                    </article>
+                    <section id="subscriptionUpcomingList" class="subscription-upcoming-list" aria-label="{{tr "UpcomingSubscriptions"}}" hidden></section>
                 </div>
             </div>
             <div class="right floated right aligned eight wide column dashboard-mobile-toolbar">
@@ -630,19 +695,51 @@ function addSubscriptionCost(costs, currency, amount) {
     costs[currency] = (costs[currency] || 0) + amount;
 }
 
-function renderSubscriptionCosts(elementID, costs) {
+function renderSubscriptionCosts(elementID, costs, format) {
     const element = document.getElementById(elementID);
     const currencies = Object.keys(costs).sort();
+    element.dataset.currencyCount = currencies.length > 2 ? 'many' : String(currencies.length);
     if (currencies.length === 0) {
         element.textContent = '-';
         return;
     }
-    element.textContent = currencies.map(function (currency) {
-        return costs[currency].toLocaleString(undefined, {
+    const parts = (format || '__AMOUNT__').split('__AMOUNT__');
+    const nodes = [parts[0]];
+    currencies.forEach(function (currency, index) {
+        if (index > 0) {
+            const separator = document.createElement('span');
+            separator.className = 'subscription-cost-separator';
+            separator.textContent = ' · ';
+            nodes.push(separator);
+        }
+        const item = document.createElement('span');
+        item.className = 'subscription-cost-item';
+        const code = document.createElement('span');
+        code.className = 'subscription-cost-currency';
+        code.textContent = currency;
+        item.append(costs[currency].toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-        }) + ' ' + currency;
-    }).join(' · ');
+        }), code);
+        nodes.push(item);
+    });
+    nodes.push(parts[1] || '');
+    element.replaceChildren(...nodes);
+}
+
+function subscriptionDueLabel(days) {
+    if (days === 0) return '{{tr "SubscriptionDueToday"}}';
+    const label = days === 1
+        ? '{{tr "SubscriptionDueInDays" (toValMap "__DAYS__") 1}}'
+        : '{{tr "SubscriptionDueInDays" (toValMap "__DAYS__") 2}}';
+    return label.replace('__DAYS__', days);
+}
+
+// 与表格"剩余天数"列的着色阈值保持一致
+function subscriptionDueLevel(days) {
+    if (days <= 3) return 'danger';
+    if (days <= 7) return 'warning';
+    return '';
 }
 
 function renderUpcomingSubscriptions() {
@@ -655,23 +752,35 @@ function renderUpcomingSubscriptions() {
     const list = document.getElementById('subscriptionUpcomingList');
     list.replaceChildren();
     upcoming.forEach(function (row) {
+        const days = parseInt(row.dataset.remainingDays, 10) || 0;
+        const level = subscriptionDueLevel(days);
         const card = document.createElement('article');
-        card.className = 'subscription-upcoming-card';
+        card.className = 'subscription-tile' + (level ? ' is-' + level : '');
+        const label = document.createElement('div');
+        label.className = 'subscription-tile-label' + (level ? ' subscription-days-' + level : '');
+        label.textContent = subscriptionDueLabel(days);
         const name = document.createElement('div');
-        name.className = 'subscription-upcoming-name';
+        name.className = 'subscription-tile-value subscription-tile-name';
         name.textContent = row.cells[2].textContent.trim();
+        name.title = name.textContent;
+        const meta = document.createElement('div');
+        meta.className = 'subscription-tile-meta';
         const date = document.createElement('time');
-        date.className = 'subscription-upcoming-date';
         date.dateTime = row.cells[5].textContent.trim();
-        date.textContent = date.dateTime + ' {{tr "SubscriptionDue"}}';
-        const price = document.createElement('div');
-        price.className = 'subscription-upcoming-price';
+        date.textContent = date.dateTime;
+        meta.appendChild(date);
         const amount = (row.dataset.originalPrice || '').match(/[-+]?\d[\d.,]*/);
-        price.textContent = amount ? amount[0] + (row.dataset.originalCurrency ? ' ' + row.dataset.originalCurrency : '') : '-';
-        card.append(name, date, price);
+        if (amount) {
+            const price = document.createElement('span');
+            price.className = 'subscription-tile-price';
+            price.textContent = amount[0] + (row.dataset.originalCurrency ? ' ' + row.dataset.originalCurrency : '');
+            meta.appendChild(price);
+        }
+        card.append(label, name, meta);
         list.appendChild(card);
     });
-    document.getElementById('subscriptionUpcoming').hidden = upcoming.length === 0;
+    list.hidden = upcoming.length === 0;
+    document.getElementById('subscriptionOverviewGrid').classList.toggle('has-upcoming', upcoming.length > 0);
 }
 
 function filterSubscriptionsByGroup(group) {
@@ -691,7 +800,7 @@ function filterSubscriptionsByGroup(group) {
             addSubscriptionCost(yearlyCosts, currency, parseFloat(row.dataset.yearlyCost) || 0);
         }
     });
-    renderSubscriptionCosts('subscriptionStatMonthly', monthlyCosts);
+    renderSubscriptionCosts('subscriptionStatMonthly', monthlyCosts, '{{tr "SubscriptionMonthlyEquivalent" (toValMap "__AMOUNT__")}}');
     renderSubscriptionCosts('subscriptionStatYearly', yearlyCosts);
     renderUpcomingSubscriptions();
 }

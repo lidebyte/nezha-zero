@@ -36,11 +36,6 @@
     order: -1;
   }
 
-  .dashboard-mobile-page .subscription-summary-block {
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
   .ui.table.dashboard-mobile-table,
   .ui.table.dashboard-mobile-table > thead,
   .ui.table.dashboard-mobile-table > tbody {
@@ -339,10 +334,6 @@
 
   html[nz-theme='dark'] .dashboard-mobile-table > tbody > tr > td::before {
     color: rgba(255, 255, 255, .6);
-  }
-
-  html[nz-theme='dark'] .dashboard-mobile-page .subscription-summary {
-    color: #b8bec8;
   }
 
   html[nz-theme='dark'] .dashboard-mobile-table .subscription-days-disabled {

@@ -39,13 +39,15 @@
             </ul>
             <ul class="nav navbar-nav navbar-right">
                 {{if .Admin}}
-                <li class="dropdown">
+                <li class="dropdown nav-user-menu hidden-xs">
                     <a data-toggle="dropdown"><i class="user icon"></i>{{.Admin.Name}}<b class="caret"></b></a>
                     <ul class="dropdown-menu" style="margin-bottom:20px;">
                         <li><a href="/server"><i class="terminal icon"></i>{{tr "AdminPanel" }}</a></li>
                         <li><a @click="logOut({{.Admin.ID}})"><i class="logout icon"></i>{{tr "Logout"}}</a></li>
                     </ul>
                 </li>
+                <li class="nav-user-admin visible-xs"><a href="/server"><i class="cog icon"></i>{{tr "AdminPanel" }}</a></li>
+                <li class="nav-user-logout visible-xs"><a href="javascript:;" @click.prevent="logOut({{.Admin.ID}})"><i class="logout icon"></i>{{tr "Logout"}}</a></li>
                 {{else}}
                 <li><a href="/login"><i class="sign-in icon"></i>{{tr "Login" }}</a></li>
                 {{end}}

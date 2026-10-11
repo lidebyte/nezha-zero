@@ -56,7 +56,7 @@ table.ui.basic.table th:nth-child(5) {
             </thead>
             <tbody>
                 {{range $server := .Servers}}
-                <tr>
+                <tr class="server-row">
                     <td data-label="{{tr "SelectAll"}}">
                         <input type="checkbox" class="nezha-servers" value="{{$server.ID}}" style="margin-right: 10px;"/>
                         {{if $server.ShowCountryFlag}}

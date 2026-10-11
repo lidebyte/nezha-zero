@@ -140,17 +140,17 @@ html[nz-theme='dark'] .subscription-tile-label.subscription-days-danger {
     margin-left: .2rem;
     cursor: pointer;
 }
-.subscription-group-filter > .filter.icon {
+.subscription-group-filter > .chevron.down.icon {
     margin: 0 !important;
     color: rgba(0,0,0,.22);
     font-size: .58em;
     opacity: 1;
     transition: color .15s ease;
 }
-.subscription-group-header:hover .subscription-group-filter > .filter.icon {
+.subscription-group-header:hover .subscription-group-filter > .chevron.down.icon {
     color: rgba(0,0,0,.3);
 }
-.subscription-group-filter.active > .filter.icon {
+.subscription-group-filter.active > .chevron.down.icon {
     color: rgba(0,0,0,.38);
 }
 .subscription-remaining-header,
@@ -380,7 +380,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         <th class="subscription-group-header">
                             {{tr "SubscriptionGroup"}}
                             <div id="subscriptionGroupFilter" class="ui icon top right pointing dropdown subscription-group-filter" title="{{tr "AllSubscriptionGroups"}}">
-                                <i class="filter icon"></i>
+                                <i class="chevron down icon"></i>
                                 <div class="menu">
                                     <div class="item" data-value="">{{tr "AllSubscriptionGroups"}}</div>
                                 </div>

@@ -200,7 +200,7 @@
 
   function positionWheelAt($wheel, y, m, d) {
     initWheelDate($wheel);
-    buildWheelLists($wheel, y, m, d);
+    rebuildWheelDays($wheel, y, m, d);
     setWheelSuppress($wheel, true);
     scrollColToValue($wheel.find('[data-part=year]'), y);
     scrollColToValue($wheel.find('[data-part=month]'), m);
@@ -320,50 +320,131 @@
     $day.append(buildDayItems(dim));
   }
 
-  function scrollColToValue($col, value) {
+  function stopColAnimation($col) {
+    var motion = $col.data("pneMotion");
+    if (motion) {
+      if (global.cancelAnimationFrame) global.cancelAnimationFrame(motion.frame);
+      else clearTimeout(motion.frame);
+    }
+    $col.removeData("pneMotion pneScrollValue");
+    var snap = $col.data("pneScrollSnap");
+    if (snap != null) {
+      $col[0].style.scrollSnapType = snap;
+      $col.removeData("pneScrollSnap");
+    }
+  }
+
+  function colGeometry($col) {
+    var items = $col.find("li");
+    var first = items[0].offsetTop - $col[0].clientHeight / 2 + WHEEL_ITEM_H / 2;
+    var period = $col.data("part") === "day" ? items.length / WHEEL_DAY_CYCLES * WHEEL_ITEM_H : 0;
+    return { items: items, first: first, max: first + (items.length - 1) * WHEEL_ITEM_H, period: period };
+  }
+
+  function valueAtTop(geometry, top) {
+    var index = Math.round((top - geometry.first) / WHEEL_ITEM_H);
+    if (geometry.period) {
+      var count = geometry.period / WHEEL_ITEM_H;
+      index = ((index % count) + count) % count;
+    } else index = Math.max(0, Math.min(geometry.items.length - 1, index));
+    return parseInt(geometry.items.eq(index).data("value"), 10);
+  }
+
+  function animateColToTop($col, top, wheelInput) {
+    var motion = $col.data("pneMotion");
+    var geometry = motion ? motion.geometry : colGeometry($col);
+    if (!geometry.period) top = Math.max(geometry.first, Math.min(geometry.max, top));
+    var value = valueAtTop(geometry, top);
+    if (global.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      scrollColToValue($col, value);
+      updateColVisibility($col);
+      return;
+    }
+    // 连续输入只更新同一个动画的目标，避免反复停止、重启缓动。
+    if (!motion) {
+      motion = { geometry: geometry, current: $col.scrollTop(), time: 0 };
+      $col.data("pneMotion", motion);
+      if ($col.data("pneScrollSnap") == null) $col.data("pneScrollSnap", $col[0].style.scrollSnapType);
+      $col[0].style.scrollSnapType = "none";
+    }
+    motion.target = top;
+    motion.inputAt = wheelInput ? Date.now() : 0;
+    $col.data("pneScrollValue", value);
+    if (motion.frame != null) return;
+    var raf = global.requestAnimationFrame || function (fn) { return setTimeout(function () { fn(Date.now()); }, 16); };
+    function frame(time) {
+      if ($col.data("pneMotion") !== motion) return;
+      // 输入期间保留像素位移，停手后才吸附；小幅滚动也立即有反馈。
+      var idle = !motion.inputAt || Date.now() - motion.inputAt >= 80;
+      if (idle) motion.target = geometry.first + Math.round((motion.target - geometry.first) / WHEEL_ITEM_H) * WHEEL_ITEM_H;
+      var dt = motion.time ? Math.min(32, time - motion.time) : 16;
+      motion.time = time;
+      motion.current += (motion.target - motion.current) * (1 - Math.exp(-dt / 35));
+      var visibleTop = motion.current;
+      if (geometry.period) {
+        visibleTop = geometry.first + Math.floor(WHEEL_DAY_CYCLES / 2) * geometry.period +
+          ((visibleTop - geometry.first) % geometry.period + geometry.period) % geometry.period;
+      }
+      $col.scrollTop(visibleTop);
+      updateColVisibility($col);
+      if (idle && Math.abs(motion.target - motion.current) < 0.5) {
+        scrollColToValue($col, valueAtTop(geometry, motion.target));
+        updateColVisibility($col);
+        return;
+      }
+      motion.frame = raf(frame);
+    }
+    motion.frame = raf(frame);
+  }
+
+  function scrollColToValue($col, value, animate) {
     var $items = $col.find('li[data-value="' + value + '"]');
-    if (!$items.length) return;
+    if (!$items.length) {
+      stopColAnimation($col);
+      return;
+    }
     // 循环日列里同一日期出现多组，取正中那组定位；
     // 每次吸附后都回到正中组，向上/向下滚动都始终有富余，实现循环
     var $li = $items.length > 1 ? $items.eq(Math.floor($items.length / 2)) : $items.first();
-    $col.scrollTop($li[0].offsetTop - $col[0].clientHeight / 2 + WHEEL_ITEM_H / 2);
+    if (animate) {
+      // 循环日列选最近一组，月末到 1 号也只滚动一格。
+      var motion = $col.data("pneMotion");
+      var currentTop = motion ? motion.current : $col.scrollTop();
+      var center = $col.scrollTop() + $col[0].clientHeight / 2;
+      $items.each(function () {
+        if (Math.abs(this.offsetTop + WHEEL_ITEM_H / 2 - center) <
+            Math.abs($li[0].offsetTop + WHEEL_ITEM_H / 2 - center)) $li = $(this);
+      });
+      var targetTop = $li[0].offsetTop - $col[0].clientHeight / 2 + WHEEL_ITEM_H / 2;
+      animateColToTop($col, currentTop + targetTop - $col.scrollTop(), false);
+    } else {
+      stopColAnimation($col);
+      $col.scrollTop($li[0].offsetTop - $col[0].clientHeight / 2 + WHEEL_ITEM_H / 2);
+    }
   }
 
   function getColValue($col) {
-    var center = $col.scrollTop() + $col[0].clientHeight / 2;
-    var best = null;
-    var bestDist = Infinity;
-    $col.find("li").each(function () {
-      var dist = Math.abs(this.offsetTop + WHEEL_ITEM_H / 2 - center);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = $(this);
-      }
-    });
-    return best ? parseInt(best.data("value"), 10) : null;
+    // 动画期间读取目标值，让连续操作和立即保存使用已选日期。
+    var pending = $col.data("pneScrollValue");
+    if (pending != null) return pending;
+    return valueAtTop(colGeometry($col), $col.scrollTop());
   }
 
   function updateColVisibility($col) {
-    var center = $col.scrollTop() + $col[0].clientHeight / 2;
-    var val = null;
-    $col.find("li").each(function () {
-      var itemCenter = this.offsetTop + WHEEL_ITEM_H / 2;
-      var steps = Math.round(Math.abs(itemCenter - center) / WHEEL_ITEM_H);
-      var $li = $(this);
-      $li.removeClass("is-active is-adjacent");
-      if (steps === 0) {
-        $li.addClass("is-active");
-        val = parseInt($li.data("value"), 10);
-      } else if (steps === 1) {
-        $li.addClass("is-adjacent");
-      }
-    });
-    return val;
+    var motion = $col.data("pneMotion");
+    var geometry = motion ? motion.geometry : colGeometry($col);
+    var index = Math.max(0, Math.min(geometry.items.length - 1, Math.round(($col.scrollTop() - geometry.first) / WHEEL_ITEM_H)));
+    // 只更新当前及相邻三项，避免每帧读写整列数百个日期节点。
+    $col.find(".is-active, .is-adjacent").removeClass("is-active is-adjacent");
+    geometry.items.eq(index).addClass("is-active");
+    if (index > 0) geometry.items.eq(index - 1).addClass("is-adjacent");
+    if (index + 1 < geometry.items.length) geometry.items.eq(index + 1).addClass("is-adjacent");
+    return parseInt(geometry.items.eq(index).data("value"), 10);
   }
 
   function snapCol($col) {
     var val = getColValue($col);
-    if (val != null) scrollColToValue($col, val);
+    if (val != null && $col.data("pneScrollValue") == null) scrollColToValue($col, val);
     updateColVisibility($col);
     return val;
   }
@@ -386,24 +467,6 @@
     var target = !keepDay || keepDay > dim ? dim : keepDay;
     scrollColToValue($dayCol, target);
     updateColVisibility($dayCol);
-  }
-
-  function stepWheelCol($col, dir) {
-    var $wheel = $col.closest(".pne-wheel-date");
-    if ($wheel.data("pneSuppressCommit")) return;
-    activateWheel($wheel);
-    var val = getColValue($col);
-    var $ref = val != null ? $col.find('li[data-value="' + val + '"]') : $();
-    var $target;
-    if ($ref.length) {
-      $target = dir > 0 ? $ref.next() : $ref.prev();
-    } else {
-      $target = dir > 0 ? $col.find("li").first() : $col.find("li").last();
-    }
-    if (!$target.length) return;
-    scrollColToValue($col, $target.data("value"));
-    updateColVisibility($col);
-    commitWheel($wheel);
   }
 
   function readWheelIsoDate($wheel) {
@@ -485,6 +548,10 @@
         "touchstart",
         function (e) {
           if (e.touches.length !== 1) return;
+          if ($col.closest(".pne-wheel-date").data("pneSuppressCommit")) return;
+          stopColAnimation($col);
+          $col.data("pneScrollSnap", colEl.style.scrollSnapType);
+          colEl.style.scrollSnapType = "none";
           var touch = e.touches[0];
           $col.data("pneTouchY", touch.clientY);
           $col.data("pneTouchScrollTop", colEl.scrollTop);
@@ -515,7 +582,7 @@
         $col.data("pneTouchY", null);
         var $w = $col.closest(".pne-wheel-date");
         if ($w.data("pneSuppressCommit")) return;
-        snapCol($col);
+        scrollColToValue($col, getColValue($col), true);
         commitWheel($w);
       }
 
@@ -529,6 +596,7 @@
 
       $col
       .on("mousedown.pneWheel", function () {
+        stopColAnimation($(this));
         $(this).data("pneUserDrag", true);
       })
       .on("mouseup.pneWheel mouseleave.pneWheel", function () {
@@ -538,6 +606,7 @@
         var $col = $(this);
         var $w = $col.closest(".pne-wheel-date");
         if ($w.data("pneSuppressCommit")) return;
+        if ($col.data("pneScrollValue") != null || $col.data("pneTouchY") != null) return;
         updateColVisibility($col);
         if (!$w.data("pneTouched")) {
           if ($col.data("pneUserDrag")) activateWheel($w);
@@ -548,18 +617,26 @@
       .on("wheel.pneWheel", function (e) {
         e.preventDefault();
         var $col = $(this);
-        var now = Date.now();
-        var last = $col.data("pneWheelAt") || 0;
-        if (now - last < 100) return;
-        $col.data("pneWheelAt", now);
-        var dir = e.originalEvent.deltaY > 0 ? 1 : -1;
-        stepWheelCol($col, dir);
+        var event = e.originalEvent;
+        if (!event.deltaY) return;
+        var $w = $col.closest(".pne-wheel-date");
+        if ($w.data("pneSuppressCommit")) return;
+        var previous = getColValue($col);
+        var touched = $w.data("pneTouched");
+        if (!touched) activateWheel($w);
+        var motion = $col.data("pneMotion");
+        var top = motion ? motion.target : $col.scrollTop();
+        // 鼠标一个刻度可能发送 100～120px，每次最多移动一行；
+        // 触控板的小幅像素输入仍保留连续位移，不设累计门槛。
+        var distance = event.deltaMode === 0 ? Math.min(Math.abs(event.deltaY), WHEEL_ITEM_H) : WHEEL_ITEM_H;
+        animateColToTop($col, top + (event.deltaY > 0 ? distance : -distance), true);
+        if (!touched || getColValue($col) !== previous) commitWheel($w);
       })
       .on("click.pneWheel", "li", function () {
         var $col = $(this).closest(".pne-wheel-col");
         var $w = $col.closest(".pne-wheel-date");
         activateWheel($w);
-        scrollColToValue($col, $(this).data("value"));
+        scrollColToValue($col, $(this).data("value"), true);
         commitWheel($w);
       });
     });

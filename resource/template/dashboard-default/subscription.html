@@ -330,6 +330,16 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
     .subscription-tile-price::before {
         content: none;
     }
+    /* Semantic 的隐藏提示仍参与布局且不换行，会把页面撑出横向滚动 */
+    [data-tooltip]:not(:hover):not(:focus-within)::after,
+    [data-tooltip]:not(:hover):not(:focus-within)::before {
+        display: none;
+    }
+    [data-tooltip]::after {
+        width: max-content;
+        max-width: min(260px, calc(100vw - 2rem));
+        white-space: normal;
+    }
 }
 @media only screen and (max-width: 360px) {
     .subscription-tile-label,

@@ -32,6 +32,11 @@ const mixinsVue = {
     },
     destroyed() {
         window.removeEventListener('scroll', this.handleScroll);
+        if (this._systemThemeQuery.addEventListener) {
+            this._systemThemeQuery.removeEventListener('change', this.handleSystemThemeChange);
+        } else {
+            this._systemThemeQuery.removeListener(this.handleSystemThemeChange);
+        }
     },
     methods: {
         toggleTemplate(template) {
@@ -45,15 +50,32 @@ const mixinsVue = {
             this.showTools = !this.showTools;
         },
         initTheme() {
+            this._systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            if (this._systemThemeQuery.addEventListener) {
+                this._systemThemeQuery.addEventListener('change', this.handleSystemThemeChange);
+            } else {
+                this._systemThemeQuery.addListener(this.handleSystemThemeChange);
+            }
             const storedTheme = localStorage.getItem("theme");
-            const theme = (storedTheme === 'dark' || storedTheme === 'light') ? storedTheme : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            this.setTheme(theme);
-            return theme;
+            this.setTheme(storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : 'system');
+            return this.theme;
         },
         setTheme(theme) {
+            this.isSystemTheme = theme === 'system';
+            localStorage.setItem("theme", theme);
+            this.applyTheme(this.isSystemTheme ? (this._systemThemeQuery.matches ? 'dark' : 'light') : theme);
+        },
+        toggleTheme() {
+            this.setTheme(this.isSystemTheme ? 'light' : (this.theme === 'light' ? 'dark' : 'system'));
+        },
+        handleSystemThemeChange(event) {
+            if (this.isSystemTheme) {
+                this.applyTheme(event.matches ? 'dark' : 'light');
+            }
+        },
+        applyTheme(theme) {
             document.body.setAttribute("theme", theme);
             this.theme = theme;
-            localStorage.setItem("theme", theme);
             // 重新赋值全局调色
             this.colors = this.theme == "dark" ? this.colorsDark : this.colorsLight;
             

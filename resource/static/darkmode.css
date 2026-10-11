@@ -47,6 +47,10 @@ html[nz-theme='dark'] .ui.table {
     color: #fff !important;
 }
 
+html[nz-theme='dark'] .ui.selectable.table tbody tr:hover {
+    color: #fff !important;
+}
+
 html[nz-theme='dark'] .ui thead th {
     background-color: #3f3f3f !important;
     color: #fff !important;

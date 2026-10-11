@@ -10,8 +10,9 @@
         </span>
 
         <span class="setTheme">
-            <i v-if="theme === 'light'" @click="setTheme('dark')" class="setTheme-dark bi bi-moon-fill"></i>
-            <i v-else @click="setTheme('light')" class="setTheme-light bi bi-brightness-high-fill"></i>
+            <i v-if="isSystemTheme" @click="toggleTheme" class="bi bi-circle-half" title='{{tr "FollowSystem"}}'></i>
+            <i v-else-if="theme === 'light'" @click="toggleTheme" class="setTheme-light bi bi-brightness-high-fill" title='{{tr "LightMode"}}'></i>
+            <i v-else @click="toggleTheme" class="setTheme-dark bi bi-moon-fill" title='{{tr "DarkMode"}}'></i>
         </span>
         <span v-if="showGoTop" class="showGoTop">
             <i @click="goTop" class="goTop bi bi-arrow-up"></i>

@@ -97,6 +97,10 @@
 		    z-index: 1200;
 		    background-color: #fff; /* 避免透明 */
 		}
+        .nb-menu > .ui.container {
+            background-color: inherit;
+        }
+
         /* 仅针对 .right.menu 下的 .item 元素移除 ::before */
         .right.menu .item::before {
             content: none !important;  /* 去除伪元素 */
@@ -116,7 +120,7 @@
             position: fixed;
             top: 50px; /* Adjust this value if needed */
             left: 0px; /* Ensure menu slides from the left */
-            background-color: #fff;
+            background-color: inherit;
             width: 200px; /* Adjust width as needed */
             z-index: 1000; /* Ensure it floats above other elements */
             box-shadow: 2px 0 5px rgba(0,0,0,0.3); /* Shadow on the right side */

@@ -13,11 +13,6 @@ table.ui.basic.table td:nth-child(5),
 table.ui.basic.table th:nth-child(5) {
     min-width: 180px;
 }
-
-.server-row:hover {
-    background-color: #f5f5f5 !important;
-    transition: background-color 0.3s ease;
-}
 </style>
 <div class="nb-container dashboard-mobile-page">
     <div class="ui container">
@@ -41,7 +36,7 @@ table.ui.basic.table th:nth-child(5) {
                 </button>
             </div>
         </div>
-        <table class="ui basic table dashboard-mobile-table">
+        <table class="ui basic selectable table dashboard-mobile-table">
             <thead>
                 <tr>
                     <th class="dashboard-mobile-control"><button onclick="checkAllServer()" class="ui mini nezha-primary-btn button">{{tr "SelectAll"}}</button></th>
@@ -61,7 +56,7 @@ table.ui.basic.table th:nth-child(5) {
             </thead>
             <tbody>
                 {{range $server := .Servers}}
-                <tr class="server-row">
+                <tr>
                     <td data-label="{{tr "SelectAll"}}">
                         <input type="checkbox" class="nezha-servers" value="{{$server.ID}}" style="margin-right: 10px;"/>
                         {{if $server.ShowCountryFlag}}

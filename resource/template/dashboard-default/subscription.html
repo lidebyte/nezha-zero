@@ -521,8 +521,12 @@ function subscriptionFormData() {
 function subscriptionCurrencyDropdown(form) {
     const select = form.find('select[name=Currency]');
     if (select.length) select.dropdown();
-    const dropdown = form.find('input[type=hidden][name=Currency]').closest('.ui.dropdown');
+    const dropdown = form.find('[name=Currency]').closest('.ui.dropdown');
     dropdown.addClass('currency-priority-dropdown');
+    dropdown.dropdown('setting', 'onShow', function () {
+        const menu = $(this).closest('.ui.dropdown').children('.menu');
+        requestAnimationFrame(function () { menu.scrollTop(0); });
+    });
     return dropdown.length ? dropdown : select;
 }
 function resetSubscriptionForm(form) {

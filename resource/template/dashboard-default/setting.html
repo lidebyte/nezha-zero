@@ -941,8 +941,12 @@
     togglePasswordLoginSettings();
     const baseCurrencySelect = $('select[name=BaseCurrency]');
     baseCurrencySelect.dropdown();
-    const baseCurrencyDropdown = $('input[type=hidden][name=BaseCurrency]').closest('.ui.dropdown');
+    const baseCurrencyDropdown = $('[name=BaseCurrency]').closest('.ui.dropdown');
     baseCurrencyDropdown.addClass('currency-priority-dropdown');
+    baseCurrencyDropdown.dropdown('setting', 'onShow', function () {
+        const menu = $(this).closest('.ui.dropdown').children('.menu');
+        requestAnimationFrame(function () { menu.scrollTop(0); });
+    });
     $('#currencyApiKeyHelp').popup({
         popup: $('#currencyApiKeyPopup'),
         on: 'hover',

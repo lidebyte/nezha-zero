@@ -1223,7 +1223,7 @@ other = "¿Eliminar esta suscripción?"
 other = "Fecha de inicio"
 
 [SubscriptionEndDate]
-other = "Fecha de fin"
+other = "Fecha de vencimiento"
 
 [RemainingDays]
 other = "Días restantes"

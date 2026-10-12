@@ -1232,7 +1232,7 @@ other = "Delete this subscription?"
 other = "Start Date"
 
 [SubscriptionEndDate]
-other = "End Date"
+other = "Expiration Date"
 
 [RemainingDays]
 other = "Days Remaining"

@@ -1231,7 +1231,7 @@ other = "確認刪除此訂閱？"
 other = "訂閱開始時間"
 
 [SubscriptionEndDate]
-other = "訂閱結束時間"
+other = "到期時間"
 
 [RemainingDays]
 other = "剩餘天數"

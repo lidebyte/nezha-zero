@@ -131,8 +131,8 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible
           });
           $dimmer.on("mouseup.modalClickClose", function (e) {
             if (mouseDownOnDimmer && $(e.target).hasClass("dimmer")) {
-              // ⭐ 触发 hide 前先判断状态
-              if (!$modal.hasClass("animating")) {
+              // 隐藏弹窗不能触发 deny，否则关闭完成回调不会执行。
+              if ($modal.hasClass("active") && !$modal.hasClass("animating")) {
                 $modal.find(".modal-esc-deny").trigger("click");
               }
             }
@@ -143,6 +143,7 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible
 
       onHidden: function () {
         $(document).off("keydown.modalEsc");
+        $modal.closest(".ui.dimmer").off("mousedown.modalClickClose mouseup.modalClickClose");
       },
 
       onVisible: function () {

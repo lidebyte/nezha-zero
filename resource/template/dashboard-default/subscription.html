@@ -353,7 +353,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
         {{range $subscription := .Subscriptions}}{{if $subscription.Note}}{{$hasSubscriptionNotes = true}}{{end}}{{end}}
         <div class="ui stackable middle aligned grid subscription-header-grid">
             <div class="left aligned sixteen wide column subscription-overview">
-                <div id="subscriptionOverviewGrid" class="subscription-overview-grid">
+                <div id="subscriptionOverviewGrid" class="subscription-overview-grid" style="visibility: hidden;">
                     <article class="subscription-tile subscription-tile-cost">
                         <div class="subscription-tile-label">{{tr "YearlySubscriptionCost"}}</div>
                         <div id="subscriptionStatYearly" class="subscription-tile-value">-</div>
@@ -825,6 +825,7 @@ subscriptionGroupFilter.closest('th').addEventListener('click', function (event)
     $(subscriptionGroupFilter).dropdown('show');
 });
 filterSubscriptionsByGroup('');
+document.getElementById('subscriptionOverviewGrid').style.visibility = '';
 
 function batchEditSubscriptionGroup() {
     const group = prompt('{{tr "InputSubscriptionGroupName"}}');

@@ -797,9 +797,9 @@
 
     var $cycle = $m.find('select[name="pne_cycle"]');
     if (billing.cycle) {
-      $cycle.dropdown("set selected", billing.cycle);
+      setFormSelectValue($cycle, billing.cycle);
     } else {
-      $cycle.dropdown("set selected", PNE_UNSET_VALUE);
+      setFormSelectValue($cycle, PNE_UNSET_VALUE);
     }
     $m.find('input[name="pne_amount"]').val(billing.amount != null ? billing.amount : "");
     setCheckbox("pne_auto_renewal", String(billing.autoRenewal) === "1");
@@ -808,9 +808,9 @@
     $m.find('input[name="pne_traffic_vol"]').val(plan.trafficVol || "");
     var $trafficType = $m.find('select[name="pne_traffic_type"]');
     if (plan.trafficType) {
-      $trafficType.dropdown("set selected", String(plan.trafficType));
+      setFormSelectValue($trafficType, String(plan.trafficType));
     } else {
-      $trafficType.dropdown("set selected", PNE_UNSET_VALUE);
+      setFormSelectValue($trafficType, PNE_UNSET_VALUE);
     }
     setCheckbox("pne_ipv4", String(plan.IPv4) === "1");
     setCheckbox("pne_ipv6", String(plan.IPv6) === "1");
@@ -828,12 +828,12 @@
     if (state.initialized) return;
 
     state.$modal.find(".menu .item").tab();
-    state.$modal.find(".ui.dropdown").each(function () {
+    state.$modal.find("select").each(function () {
       var $dropdown = $(this);
       if ($dropdown.attr("name") === "pne_cycle" || $dropdown.attr("name") === "pne_traffic_type") {
-        $dropdown.dropdown({ forceSelection: false });
+        initFormSelect($dropdown, { forceSelection: false });
       } else {
-        $dropdown.dropdown();
+        initFormSelect($dropdown);
       }
     });
     state.$modal.find(".ui.checkbox").checkbox();

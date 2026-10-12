@@ -523,7 +523,10 @@ function subscriptionFormData() {
 }
 function subscriptionCurrencyDropdown(form) {
     const select = form.find('select[name=Currency]');
-    if (select.length) select.dropdown();
+    if (select.length) {
+        const control = initFormSelect(select);
+        if (control.is('select')) return control;
+    }
     const dropdown = form.find('[name=Currency]').closest('.ui.dropdown');
     dropdown.addClass('currency-priority-dropdown');
     dropdown.dropdown('setting', 'onShow', function () {
@@ -566,8 +569,8 @@ function addOrEditSubscription(subscription) {
     form.find('[name=EndDate]').val(current.EndDate || '');
     form.find('.pne-date-manual[data-target=EndDate]').val(current.EndDate || '');
     form.find('[name=Price]').val(current.Price || '');
-    form.find('[name=PriceUnit]').dropdown('set selected', current.PriceUnit || '年');
-    subscriptionCurrencyDropdown(form).dropdown('set selected', current.Currency || '{{.Conf.BaseCurrency}}');
+    setFormSelectValue(form.find('[name=PriceUnit]'), current.PriceUnit || '年');
+    setFormSelectValue(subscriptionCurrencyDropdown(form), current.Currency || '{{.Conf.BaseCurrency}}');
     form.find('[name=Group]').val(serverRow ? (current.Group || 'Servers') : (current.Group || 'Default'));
     form.find('[name=DisplayIndex]').val(current.DisplayIndex || 0);
     form.find('[name=Link]').val(current.Link || '');

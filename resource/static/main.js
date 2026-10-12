@@ -1,3 +1,19 @@
+function initFormSelect(select, settings) {
+  if (select.is('select.dashboard-native-select')) {
+    return select;
+  }
+  select.dropdown(settings);
+  return select.closest('.ui.dropdown');
+}
+
+function setFormSelectValue(select, value) {
+  if (select.is('select.dashboard-native-select')) {
+    select.val(value).trigger('change');
+  } else {
+    select.dropdown('set selected', value);
+  }
+}
+
 // CSRF 保护：从 Cookie 读取 CSRF token
 function getCSRFToken() {
   var match = document.cookie.match(new RegExp('(^| )nz-csrf=([^;]+)'));
@@ -337,7 +353,7 @@ function addOrEditAlertRule(rule, alertType) {
     rule ? LANG.Edit + '<i class="edit icon"></i>' : LANG.Add + '<i class="add icon"></i>'
   );
   const alertTypeSelect = form.find("select[name=AlertType]");
-  alertTypeSelect.closest(".ui.dropdown").dropdown("set selected", String(type));
+  setFormSelectValue(alertTypeSelect, String(type));
   const alertTypeDropdown = alertTypeSelect.closest(".ui.dropdown");
   alertTypeSelect.prop("disabled", false);
   alertTypeDropdown.removeClass("disabled");
@@ -349,12 +365,12 @@ function addOrEditAlertRule(rule, alertType) {
 
   if (type === 0) {
     form.find("[name=RulesRaw]").val(rule ? rule.RulesRaw : "");
-    form.find("[name=TriggerMode]").dropdown("set selected", String(rule ? rule.TriggerMode : 0));
+    setFormSelectValue(form.find("[name=TriggerMode]"), String(rule ? rule.TriggerMode : 0));
     modal.find(".ui.rule-enable.checkbox").checkbox(
       rule && rule.Enable ? "set checked" : "set unchecked"
     );
     form.find("[name=AdvanceDays]").val(1);
-    form.find("[name=Cover]").dropdown("set selected", "0");
+    setFormSelectValue(form.find("[name=Cover]"), "0");
     form.find("[name=SkipServersRaw]").val("");
     form.find("[name=SkipSubscriptionsRaw]").val("");
     modal.find(".expiration-daily-reminder").checkbox("set unchecked");
@@ -362,7 +378,7 @@ function addOrEditAlertRule(rule, alertType) {
       !rule || rule.Enable ? "set checked" : "set unchecked"
     );
     form.find("[name=SubscriptionAdvanceDays]").val(1);
-    form.find("[name=SubscriptionCover]").dropdown("set selected", "0");
+    setFormSelectValue(form.find("[name=SubscriptionCover]"), "0");
     modal.find(".subscription-expiration-daily-reminder").checkbox("set unchecked");
     modal.find(".subscription-expiration-rule-enable").checkbox("set checked");
     const failRaw = rule ? rule.FailTriggerTasksRaw || "[]" : "[]";
@@ -381,7 +397,7 @@ function addOrEditAlertRule(rule, alertType) {
     });
   } else if (type === 1) {
     form.find("[name=RulesRaw]").val("");
-    form.find("[name=TriggerMode]").dropdown("set selected", "0");
+    setFormSelectValue(form.find("[name=TriggerMode]"), "0");
     form.find("[name=FailTriggerTasksRaw]").val("[]");
     form.find("[name=RecoverTriggerTasksRaw]").val("[]");
     form.find("[name=SkipSubscriptionsRaw]").val("");
@@ -390,8 +406,7 @@ function addOrEditAlertRule(rule, alertType) {
     );
     const expirationRule = rule ? JSON.parse(rule.RulesRaw || "[]")[0] || {} : {};
     form.find("[name=AdvanceDays]").val(rule ? expirationRule.advance_days : 1);
-    form.find("[name=Cover]").dropdown(
-      "set selected",
+    setFormSelectValue(form.find("[name=Cover]"),
       String(rule ? expirationRule.cover || 0 : 0)
     );
     modal.find(".expiration-daily-reminder").checkbox(
@@ -411,14 +426,13 @@ function addOrEditAlertRule(rule, alertType) {
     });
   } else {
     form.find("[name=RulesRaw]").val("");
-    form.find("[name=TriggerMode]").dropdown("set selected", "0");
+    setFormSelectValue(form.find("[name=TriggerMode]"), "0");
     form.find("[name=FailTriggerTasksRaw]").val("[]");
     form.find("[name=RecoverTriggerTasksRaw]").val("[]");
     form.find("[name=SkipServersRaw]").val("");
     const expirationRule = rule ? JSON.parse(rule.RulesRaw || "[]")[0] || {} : {};
     form.find("[name=SubscriptionAdvanceDays]").val(rule ? expirationRule.advance_days : 1);
-    form.find("[name=SubscriptionCover]").dropdown(
-      "set selected",
+    setFormSelectValue(form.find("[name=SubscriptionCover]"),
       String(rule ? expirationRule.cover || 0 : 0)
     );
     modal.find(".subscription-expiration-daily-reminder").checkbox(
@@ -455,7 +469,7 @@ function addOrEditNotification(notification) {
   modal.find("input[name=ID]").val(notification ? notification.ID : null);
   modal.find("input[name=Name]").val(notification ? notification.Name : null);
   modal.find("input[name=Tag]").val(notification ? notification.Tag : null);
-  modal.find("select[name=Type]").dropdown("set selected", String(current.Type || 0));
+  setFormSelectValue(modal.find("select[name=Type]"), String(current.Type || 0));
   modal.find("input[name=URL]").val(notification ? notification.URL : null);
   modal
     .find("textarea[name=RequestHeader]")

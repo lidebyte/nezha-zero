@@ -2,6 +2,10 @@
   const closeLabel = document.currentScript.dataset.closeLabel;
   const mobileMedia = window.matchMedia('(max-width: 767px)');
 
+  if (window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse)').matches) {
+    $('select.ui.dropdown:not([multiple])').removeClass('dropdown').addClass('dashboard-native-select');
+  }
+
   function updateCloseButtons() {
     document.querySelectorAll('.ui.modal').forEach(function (modal) {
       if (!modal.querySelector('form, .ui.form')) return;

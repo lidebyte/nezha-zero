@@ -132,8 +132,11 @@ func (mp *memberPage) subscription(c *gin.Context) {
 	convertPrice := func(price, priceUnit, currency string) (displayAmount, originalAmount, displayUnit string) {
 		currency = strings.ToUpper(strings.TrimSpace(currency))
 		amount, ok := model.ParsePriceAmount(price)
-		if !ok || amount == 0 {
+		if !ok {
 			return "", "", ""
+		}
+		if amount == 0 {
+			return "0", "", ""
 		}
 		divisor := float64(subscriptionPriceDivisor(singleton.Conf.ShowMonthlyPrice, priceUnit))
 		if singleton.Conf.EnableCurrencyConversion && currency != "" {

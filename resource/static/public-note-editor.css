@@ -247,6 +247,10 @@ html[nz-theme="dark"] .pne-hint {
   color: rgba(255, 255, 255, 0.55);
 }
 
+html[nz-theme="dark"] .pne-modal .pne-menu .active.item {
+  background-color: inherit;
+}
+
 html[nz-theme="dark"] .pne-field-hint {
   color: rgba(255, 255, 255, 0.45);
 }

@@ -1,5 +1,25 @@
 /* Public note editor — Semantic UI overrides only */
 
+.pne-modal.pne-billing-only .pne-hint,
+.pne-modal.pne-billing-only .pne-menu,
+.pne-modal.pne-billing-only .pne-tab-body:not([data-tab="pne-billing"]) {
+  display: none !important;
+}
+
+.pne-modal.pne-billing-only .pne-tab-body[data-tab="pne-billing"] {
+  display: block !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.pne-modal.pne-billing-only .pne-tab-body.is-disabled > form > .pne-subscription-link-field {
+  pointer-events: auto;
+  opacity: 1;
+}
+
 .pne-modal .pne-tab-body.is-disabled {
   pointer-events: none;
 }

@@ -8,6 +8,8 @@
     server: null,
     saveDirect: false,
     formMode: false,
+    billingOnly: false,
+    originalNote: {},
     $modal: null,
     initialized: false,
   };
@@ -77,6 +79,13 @@
       if (cycle) billing.cycle = cycle;
       if (amount !== "") billing.amount = amount;
       if ($m.find('input[name="pne_auto_renewal"]').is(":checked")) billing.autoRenewal = "1";
+    }
+
+    if (state.billingOnly) {
+      var original = Object.assign({}, state.originalNote);
+      if (billingEnabled && Object.keys(billing).length) original.billingDataMod = billing;
+      else delete original.billingDataMod;
+      return original;
     }
 
     var plan = {};
@@ -814,10 +823,9 @@
   }
 
   function ensureModal() {
-    if (state.initialized) return;
-
     state.$modal = $(".pne-modal");
     if (!state.$modal.length) return;
+    if (state.initialized) return;
 
     state.$modal.find(".menu .item").tab();
     state.$modal.find(".ui.dropdown").each(function () {
@@ -942,6 +950,7 @@
       secret: server.Secret || "",
       Note: server.Note || "",
       PublicNote: publicNote,
+      Link: server.Link || "",
       EnableDDNS: server.EnableDDNS ? "on" : "",
       HideForGuest: server.HideForGuest ? "on" : "",
       DDNSProfilesRaw: server.DDNSProfilesRaw || "[]",
@@ -973,7 +982,9 @@
     }
 
     $btn.addClass("loading");
-    $.post("/api/server", JSON.stringify(serverToPayload(state.server, json)))
+    var payload = serverToPayload(state.server, json);
+    if (state.billingOnly) payload.Link = trim(state.$modal.find('input[name="pne_subscription_link"]').val());
+    $.post("/api/server", JSON.stringify(payload))
       .done(function (resp) {
         $btn.removeClass("loading");
         if (resp.code === 200) {
@@ -1012,13 +1023,22 @@
     state.server = options.server || null;
     state.saveDirect = !!options.saveDirect;
     state.formMode = !!options.formMode;
+    state.billingOnly = !!options.billingOnly;
+    state.$modal.toggleClass("pne-billing-only", state.billingOnly);
+    state.$modal.find(".header").text(pneMsg(state.billingOnly ? "billing-title" : "title"));
+    state.$modal.find(".pne-subscription-link-field").toggle(state.billingOnly);
+    state.$modal.find('input[name="pne_subscription_link"]').val(state.server ? state.server.Link || "" : "");
+    state.$modal.find(".pne-menu .item, .pne-tab-body").removeClass("active");
+    state.$modal.find('[data-tab="pne-billing"]').addClass("active");
+    state.$modal.find(".content").css("min-height", "");
 
     var raw = options.publicNote;
     if (raw == null && state.server) raw = state.server.PublicNote;
     if (raw == null && state.formMode) {
       raw = $(".server.modal textarea[name=PublicNote]").val();
     }
-    fillFormFromNote(parseNote(raw));
+    state.originalNote = parseNote(raw);
+    fillFormFromNote(state.originalNote);
 
     state.$modal.find(".pne-apply-btn").toggle(!state.saveDirect);
     state.$modal.modal("show");

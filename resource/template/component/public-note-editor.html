@@ -19,6 +19,8 @@
 
 {{define "component/public-note-editor"}}
 <div class="ui small pne-modal modal transition hidden"
+    data-pne-title="{{tr "EditPublicNote"}}"
+    data-pne-billing-title="{{tr "EditSubscription"}}"
     data-pne-applied-title="{{tr "PNEAppliedToForm"}}"
     data-pne-applied-desc="{{tr "PNEAppliedToFormDesc"}}"
     data-pne-written-title="{{tr "PNEWrittenToForm"}}"
@@ -83,6 +85,10 @@
                         <input type="checkbox" name="pne_auto_renewal" tabindex="0">
                         <label>{{tr "PNEAutoRenewal"}}</label>
                     </div>
+                </div>
+                <div class="field pne-subscription-link-field" style="display: none;">
+                    <label>{{tr "Link"}}</label>
+                    <input type="text" name="pne_subscription_link" placeholder="example.com">
                 </div>
             </form>
         </div>

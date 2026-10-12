@@ -1252,7 +1252,7 @@ other = "全部分组"
 other = "以 S 开头的 ID 表示该订阅从服务器信息同步，相关内容需要前往“服务器”页面修改。"
 
 [ServerSubscriptionEditHint]
-other = "该订阅是从服务器管理同步，账单信息请到服务器页面编辑。"
+other = "该订阅是从服务器管理同步，修改账单会同步更新服务器公开备注。"
 
 [MonthlySubscriptionCost]
 other = "月度订阅费用"

@@ -71,6 +71,7 @@ type subscriptionView struct {
 	Group          string
 	Manual         bool
 	Server         bool
+	ServerData     template.JS // 同步订阅复用服务器公开备注编辑器的原始数据
 	AutoRenewal    bool
 	Enabled        bool
 }
@@ -249,6 +250,7 @@ func (mp *memberPage) subscription(c *gin.Context) {
 			rows = append(rows, subscriptionView{
 				ID:             item.ServerID,
 				Server:         true,
+				ServerData:     server.MarshalForDashboard(),
 				Name:           item.Name,
 				StartDate:      subscriptionDate(item.StartDate),
 				EndDate:        subscriptionDate(item.EndDate),

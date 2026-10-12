@@ -1244,7 +1244,7 @@ other = "Todos los grupos"
 other = "Los ID que empiezan por S se sincronizan desde la información del servidor. Edítalos en la página Servidores."
 
 [ServerSubscriptionEditHint]
-other = "Esta suscripción se sincroniza desde la gestión de servidores. Edita la facturación en la página Servidores."
+other = "Esta suscripción se sincroniza desde la gestión de servidores. Al editar la facturación también se actualiza la nota pública del servidor."
 
 [MonthlySubscriptionCost]
 other = "Coste mensual de suscripciones"

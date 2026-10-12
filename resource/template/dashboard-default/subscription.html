@@ -412,7 +412,11 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                         {{if $hasSubscriptionNotes}}<td data-label="{{tr "Note"}}">{{if $subscription.Note}}<span class="subscription-note" title="{{$subscription.Note}}">{{$subscription.Note}}</span>{{else}}-{{end}}</td>{{end}}
                         <td data-label="{{tr "Administration"}}">
                             <div class="ui mini icon buttons">
+                                {{if $subscription.Server}}
+                                <button type="button" class="ui button" title="{{tr "EditSubscription"}}" onclick="PublicNoteEditor.open({server: {{$subscription.ServerData}}, saveDirect: true, billingOnly: true})"><i class="edit icon"></i></button>
+                                {{else}}
                                 <button type="button" class="ui button" onclick="addOrEditSubscription({{$subscription.FormData}})"><i class="edit icon"></i></button>
+                                {{end}}
                                 {{if $subscription.Link}}<a class="ui button" href="{{$subscription.Link}}" target="_blank" rel="noopener noreferrer" title="{{tr "OpenLink"}}"><i class="linkify icon"></i></a>{{end}}
                                 {{if $subscription.Manual}}
                                 <button class="ui button" onclick="showConfirm('{{tr "DeleteSubscription"}}','{{tr "ConfirmDeleteSubscription"}}',deleteRequest,'/api/subscription/'+{{$subscription.ID}})"><i class="trash alternate outline icon"></i></button>
@@ -493,7 +497,8 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
         <button class="ui positive nezha-primary-btn right labeled icon button">{{tr "Confirm"}}<i class="checkmark icon"></i></button>
     </div>
 </div>
-<link rel="stylesheet" href="/static/public-note-editor.css?v20260616a">
+{{template "component/public-note-editor" .}}
+<link rel="stylesheet" href="/static/public-note-editor.css?v20261012b">
 {{template "common/footer" .}}
 <script src="/static/public-note-editor.js?v20260919a"></script>
 <script>

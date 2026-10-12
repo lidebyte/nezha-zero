@@ -1025,6 +1025,7 @@
     state.formMode = !!options.formMode;
     state.billingOnly = !!options.billingOnly;
     state.$modal.toggleClass("pne-billing-only", state.billingOnly);
+    state.$modal.find('input[name="pne_billing_enabled"]').closest(".ui.checkbox").toggleClass("toggle", !state.billingOnly);
     state.$modal.find(".header").text(pneMsg(state.billingOnly ? "billing-title" : "title"));
     state.$modal.find(".pne-subscription-link-field").toggle(state.billingOnly);
     state.$modal.find('input[name="pne_subscription_link"]').val(state.server ? state.server.Link || "" : "");

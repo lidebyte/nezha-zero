@@ -166,7 +166,7 @@
   }
 
   .ui.table.dashboard-mobile-table > tbody > tr.server-row > td:nth-child(11),
-  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(10):not(:last-child):not(:has(.subscription-note)) {
+  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(9):not(:last-child):not(:has(.subscription-note)) {
     display: none !important;
   }
 
@@ -175,7 +175,7 @@
   }
 
   .ui.table.dashboard-mobile-table > tbody > tr.server-row > td:nth-child(5),
-  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(n+10),
+  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(n+9),
   .ui.table.dashboard-mobile-table > tbody > tr > td:last-child {
     grid-column: 1 / -1;
   }
@@ -211,8 +211,8 @@
     border-top: 1px solid #edf0f3 !important;
   }
 
-  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(7),
-  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(8) {
+  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(6),
+  .ui.table.dashboard-mobile-table > tbody > tr.subscription-row > td:nth-child(7) {
     font-weight: 600;
   }
 

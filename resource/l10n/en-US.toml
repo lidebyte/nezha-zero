@@ -1214,7 +1214,7 @@ other = "Subscription Management"
 other = "Enable subscription management"
 
 [ShowServerBilling]
-other = "Show server billing"
+other = "Sync server billing"
 
 [AddSubscription]
 other = "Add Subscription"

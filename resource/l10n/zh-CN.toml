@@ -1213,7 +1213,7 @@ other = "订阅管理"
 other = "启用订阅管理"
 
 [ShowServerBilling]
-other = "显示服务器账单"
+other = "同步服务器账单"
 
 [AddSubscription]
 other = "新增订阅"

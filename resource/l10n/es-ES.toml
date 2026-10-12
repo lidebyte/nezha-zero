@@ -1205,7 +1205,7 @@ other = "Gestión de suscripciones"
 other = "Activar gestión de suscripciones"
 
 [ShowServerBilling]
-other = "Mostrar facturación del servidor"
+other = "Sincronizar facturación del servidor"
 
 [AddSubscription]
 other = "Añadir suscripción"

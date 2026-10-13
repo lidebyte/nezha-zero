@@ -311,9 +311,10 @@
                     <select name="CurrencyProvider" class="ui fluid dropdown">
                         <option value="fixer" {{if eq .Conf.CurrencyProvider "fixer"}}selected{{end}}>fixer.io</option>
                         <option value="apilayer" {{if eq .Conf.CurrencyProvider "apilayer"}}selected{{end}}>apilayer.com</option>
+                        <option value="frankfurter" {{if eq .Conf.CurrencyProvider "frankfurter"}}selected{{end}}>frankfurter.dev</option>
                     </select>
                 </div>
-                <div class="field">
+                <div class="field" id="currencyApiKeyField">
                     <label>{{tr "CurrencyAPIKey"}}<span id="currencyApiKeyHelp" class="currency-api-key-help" tabindex="0"><i class="question circle outline icon"></i></span></label>
                     <div id="currencyApiKeyPopup" class="ui flowing popup transition hidden">
                         <div>{{tr "CurrencyAPIKeyApplyHint"}}</div>
@@ -953,6 +954,12 @@
         position: 'top left',
         delay: {show: 120, hide: 300}
     });
+    initFormSelect($('select[name=CurrencyProvider]'));
+    function toggleCurrencyProviderSettings() {
+        $('#currencyApiKeyField').toggle($('[name=CurrencyProvider]').val() !== 'frankfurter');
+    }
+    $('#settingForm').on('change', '[name=CurrencyProvider]', toggleCurrencyProviderSettings);
+    toggleCurrencyProviderSettings();
     toggleSubscriptionSettings();
     toggleIPChangeSettings();
     $('#currencyRefreshBtn').on('click', function () {

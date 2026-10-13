@@ -1705,10 +1705,10 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	if currencyProvider == "" {
 		currencyProvider = oldConf.CurrencyProvider
 		if currencyProvider == "" {
-			currencyProvider = "fixer"
+			currencyProvider = "frankfurter"
 		}
 	}
-	if currencyProvider != "fixer" && currencyProvider != "apilayer" {
+	if currencyProvider != "fixer" && currencyProvider != "apilayer" && currencyProvider != "frankfurter" {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "不支持的货币换算服务"})
 		return
 	}
@@ -1727,7 +1727,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	if currencyAPIKey == "********" {
 		currencyAPIKey = oldConf.CurrencyAPIKey
 	}
-	if enableCurrencyConversion && currencyAPIKey == "" {
+	if enableCurrencyConversion && currencyProvider != "frankfurter" && currencyAPIKey == "" {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "启用货币换算时必须填写 API Key"})
 		return
 	}

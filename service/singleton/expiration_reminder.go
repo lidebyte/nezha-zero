@@ -275,7 +275,7 @@ func loadCurrencyRates() {
 
 func RefreshCurrencyRates() error {
 	apiKey := strings.TrimSpace(Conf.CurrencyAPIKey)
-	if apiKey == "" {
+	if apiKey == "" && Conf.CurrencyProvider != "frankfurter" {
 		return errors.New("currency API key is empty")
 	}
 
@@ -285,6 +285,9 @@ func RefreshCurrencyRates() error {
 	var req *http.Request
 	var err error
 	switch Conf.CurrencyProvider {
+	case "frankfurter":
+		endpoint = "https://api.frankfurter.dev/v2/rates?" + params.Encode()
+		req, err = http.NewRequest(http.MethodGet, endpoint, nil)
 	case "apilayer":
 		endpoint = "https://api.apilayer.com/fixer/latest?" + params.Encode()
 		req, err = http.NewRequest(http.MethodGet, endpoint, nil)
@@ -320,8 +323,27 @@ func RefreshCurrencyRates() error {
 		return errors.New("currency provider response is too large")
 	}
 	var payload currencyAPIResponse
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return fmt.Errorf("decode currency provider response: %w", err)
+	if Conf.CurrencyProvider == "frankfurter" && resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		var records []struct {
+			Base  string  `json:"base"`
+			Quote string  `json:"quote"`
+			Rate  float64 `json:"rate"`
+		}
+		if err := json.Unmarshal(body, &records); err != nil {
+			return fmt.Errorf("decode currency provider response: %w", err)
+		}
+		payload.Base = "EUR"
+		payload.Rates = make(map[string]float64, len(records))
+		for _, record := range records {
+			if strings.ToUpper(strings.TrimSpace(record.Base)) != payload.Base {
+				return errors.New("currency provider returned an unexpected base currency")
+			}
+			payload.Rates[record.Quote] = record.Rate
+		}
+	} else {
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return fmt.Errorf("decode currency provider response: %w", err)
+		}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 || (payload.Success != nil && !*payload.Success) {
 		message := strings.TrimSpace(payload.Error.Info)

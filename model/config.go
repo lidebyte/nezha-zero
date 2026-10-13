@@ -261,7 +261,7 @@ func (c *Config) Read(path string) error {
 		c.AvgPingCount = 2
 	}
 	if c.CurrencyProvider == "" {
-		c.CurrencyProvider = "fixer"
+		c.CurrencyProvider = "frankfurter"
 	}
 	if c.BaseCurrency == "" || !IsSupportedCurrency(c.BaseCurrency) {
 		c.BaseCurrency = "USD"

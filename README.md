@@ -83,7 +83,7 @@ You can change the dashboard language in the settings page (`/setting`) after th
 
 ## 备注和公开备注/Public Note
 
-新增到期时间展示和国家自定义，写在公开备注（Public Note）中。完整版配置在这里[账单信息备注](https://github.com/nezhahq/nezha/pull/425#issuecomment-2389107872)
+新增到期时间展示和国家自定义写在公开备注（Public Note）中，同步公开备注可视化编辑功能。完整版配置在这里[账单信息备注](https://github.com/nezhahq/nezha/pull/425#issuecomment-2389107872)
 
 ```html
 {
@@ -97,9 +97,6 @@ You can change the dashboard language in the settings page (`/setting`) after th
   "countryCode": "HK"
 }
 ```
-增加公开备注可视化编辑功能，在此修改有关数据后可以直接写入公开备注：
-![公开备注可视化编辑](agent/web/public-note-editor.webp)
-
 ## 关于安全/Security
 面板的安全问题是最高优先级的需求，目前已经在项目中做了很多加固。如果您在在使用过程中发现了任何安全问题或者有什么关于安全的看法，非常欢迎您能及时地告知我。
 

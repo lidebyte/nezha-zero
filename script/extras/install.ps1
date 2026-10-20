@@ -13,8 +13,7 @@ if($PSVersionTable.PSVersion.Major -lt 5){
     Write-Host "Refer to the community article and install manually! https://nyko.me/2020/12/13/nezha-windows-client.html" -BackgroundColor DarkRed -ForegroundColor Green
     exit
 }
-#$agentrepo = "railzen/nezha-zero"
-$agentrepo = "nezhahq/agent"
+$agentrepo = "railzen/nezha-zero"
 #  x86 or x64 or arm64
 if ([System.Environment]::Is64BitOperatingSystem) {
     if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") {
@@ -26,37 +25,23 @@ if ([System.Environment]::Is64BitOperatingSystem) {
 else {
     $file = "nezha-agent_windows_386.zip"
 }
-$agentreleases = "https://api.github.com/repos/$agentrepo/releases"
+$agentreleases = "https://api.github.com/repos/$agentrepo/releases/latest"
+#TLS/SSL
+Write-Host "Determining latest nezha release" -BackgroundColor DarkGreen -ForegroundColor White
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# releases/latest excludes prereleases and drafts; exit on failure instead of falling back to sources that may return a prerelease tag
+$agenttag = (Invoke-WebRequest -Uri $agentreleases -UseBasicParsing | ConvertFrom-Json).tag_name
+if ($agenttag -notmatch '^v\d+\.\d+\.\d+$') {
+    Write-Host "Failed to determine agent version, please check if the network can reach $agentreleases" -BackgroundColor DarkRed -ForegroundColor White
+    exit 1
+}
 #重复运行自动更新
+# Uninstall only after the version is resolved, so a failed lookup keeps the existing agent
 if (Test-Path "C:\nezha\nezha-agent.exe") {
     Write-Host "Nezha monitoring already exists, delete and reinstall" -BackgroundColor DarkGreen -ForegroundColor White
     C:\nezha\nezha-agent.exe service uninstall
     Remove-Item "C:\nezha" -Recurse
 }
-#TLS/SSL
-Write-Host "Determining latest nezha release" -BackgroundColor DarkGreen -ForegroundColor White
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$agenttag = (Invoke-WebRequest -Uri $agentreleases -UseBasicParsing | ConvertFrom-Json)[0].tag_name
-if ([string]::IsNullOrWhiteSpace($agenttag)) {
-    $optionUrl = "https://fastly.jsdelivr.net/gh/railzen/nezha-zero/"
-    Try {
-        $response = Invoke-WebRequest -Uri $optionUrl -UseBasicParsing -TimeoutSec 10
-        if ($response.StatusCode -eq 200) {
-            $versiontext = $response.Content | findstr /c:"option.value"
-            $version = [regex]::Match($versiontext, "@(\d+\.\d+\.\d+)").Groups[1].Value
-            $agenttag = "v" + $version
-        }
-    } Catch {
-        $optionUrl = "https://gcore.jsdelivr.net/gh/railzen/nezha-zero/"
-        $response = Invoke-WebRequest -Uri $optionUrl -UseBasicParsing -TimeoutSec 10
-        if ($response.StatusCode -eq 200) {
-            $versiontext = $response.Content | findstr /c:"option.value"
-            $version = [regex]::Match($versiontext, "@(\d+\.\d+\.\d+)").Groups[1].Value
-            $agenttag = "v" + $version
-        }
-    }
-}
-$agenttag = "v0.20.5"
 #Region判断
 #$ipapi = ""
 $region = "Unknown"

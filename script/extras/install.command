@@ -82,11 +82,10 @@ install_agent() {
 
     echo -e "Obtaining Agent version"
 
-    local version=$(curl -m 10 -sL "https://api.github.com/repos/nezhahq/agent/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    local version=$(curl -m 10 -sL "https://api.github.com/repos/railzen/nezha-zero/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
 
-    version="v0.20.5"
     if [ ! -n "$version" ]; then
-        echo -e "Fail to obtaine agent version, please check if the network can link https://api.github.com/repos/nezhahq/agent/releases/latest"
+        echo -e "Fail to obtaine agent version, please check if the network can link https://api.github.com/repos/railzen/nezha-zero/releases/latest"
         return 0
     else
         echo -e "The current latest version is: ${version}"
@@ -97,7 +96,7 @@ install_agent() {
     chmod -R 755 $NZ_AGENT_PATH
 
     echo -e "Downloading Agent"
-    NZ_AGENT_URL="https://${GITHUB_URL}/nezhahq/agent/releases/download/${version}/nezha-agent_darwin_${os_arch}.zip"
+    NZ_AGENT_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${version}/nezha-agent_darwin_${os_arch}.zip"
     curl -o nezha-agent_darwin_${os_arch}.zip -L -f --retry 2 --retry-max-time 60 $NZ_AGENT_URL >/dev/null 2>&1
     if [[ $? != 0 ]]; then
         echo -e "${red}Fail to download agent, please check if the network can link ${GITHUB_URL}${plain}"

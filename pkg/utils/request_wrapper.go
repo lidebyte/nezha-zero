@@ -18,12 +18,13 @@ type RequestWrapper struct {
 }
 
 func NewRequestWrapper(req *http.Request, writer gin.ResponseWriter) (*RequestWrapper, error) {
-	conn, _, err := writer.Hijack()
-	if err != nil {
+	// 先在 Hijack 前读完请求体：此时仍受外层请求体大小与读超时限制，Hijack 后读超时会被清零
+	buf := bytes.NewBuffer(nil)
+	if err := req.Write(buf); err != nil {
 		return nil, err
 	}
-	buf := bytes.NewBuffer(nil)
-	if err = req.Write(buf); err != nil {
+	conn, _, err := writer.Hijack()
+	if err != nil {
 		return nil, err
 	}
 	return &RequestWrapper{

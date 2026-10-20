@@ -488,13 +488,12 @@ func natGateway(c *gin.Context) {
 	if natConfig == nil {
 		return
 	}
-	if websocket.IsWebSocketUpgrade(c.Request) {
-		release, ok := acquireWebSocketSlot(c, webSocketPublicSlots, "public websocket")
-		if !ok {
-			return
-		}
-		defer release()
+	// 所有 NAT 请求都占用公开名额，避免普通 HTTP 请求挤占管理员终端/文件管理的流位
+	release, ok := acquireWebSocketSlot(c, webSocketPublicSlots, "public")
+	if !ok {
+		return
 	}
+	defer release()
 
 	singleton.ServerLock.RLock()
 	server := singleton.ServerList[natConfig.ServerID]
@@ -546,7 +545,7 @@ func natGateway(c *gin.Context) {
 	}
 
 	if err := rpc.NezhaHandlerSingleton.UserConnected(streamId, w); err != nil {
-		c.Writer.WriteString(fmt.Sprintf("user connected error: %v", err))
+		w.Close()
 		c.Abort()
 		return
 	}

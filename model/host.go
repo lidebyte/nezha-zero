@@ -1,6 +1,8 @@
 package model
 
 import (
+	"math"
+
 	pb "github.com/railzen/nezha-zero/proto"
 )
 
@@ -65,17 +67,25 @@ func (s *HostState) PB() *pb.State {
 	}
 }
 
+// finiteFloat64 将 NaN/Inf 归零：JSON 无法编码这些值，一次异常上报会让状态序列化持续失败。
+func finiteFloat64(f float64) float64 {
+	if math.IsNaN(f) || math.IsInf(f, 0) {
+		return 0
+	}
+	return f
+}
+
 func PB2State(s *pb.State) HostState {
 	var ts []SensorTemperature
 	for _, t := range s.GetTemperatures() {
 		ts = append(ts, SensorTemperature{
 			Name:        t.GetName(),
-			Temperature: t.GetTemperature(),
+			Temperature: finiteFloat64(t.GetTemperature()),
 		})
 	}
 
 	return HostState{
-		CPU:            s.GetCpu(),
+		CPU:            finiteFloat64(s.GetCpu()),
 		MemUsed:        s.GetMemUsed(),
 		SwapUsed:       s.GetSwapUsed(),
 		DiskUsed:       s.GetDiskUsed(),
@@ -84,14 +94,14 @@ func PB2State(s *pb.State) HostState {
 		NetInSpeed:     s.GetNetInSpeed(),
 		NetOutSpeed:    s.GetNetOutSpeed(),
 		Uptime:         s.GetUptime(),
-		Load1:          s.GetLoad1(),
-		Load5:          s.GetLoad5(),
-		Load15:         s.GetLoad15(),
+		Load1:          finiteFloat64(s.GetLoad1()),
+		Load5:          finiteFloat64(s.GetLoad5()),
+		Load15:         finiteFloat64(s.GetLoad15()),
 		TcpConnCount:   s.GetTcpConnCount(),
 		UdpConnCount:   s.GetUdpConnCount(),
 		ProcessCount:   s.GetProcessCount(),
 		Temperatures:   ts,
-		GPU:            s.GetGpu(),
+		GPU:            finiteFloat64(s.GetGpu()),
 	}
 }
 

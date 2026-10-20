@@ -1489,6 +1489,7 @@ func handleFMTask(task *pb.Task) {
 		printf("FM IOStream失败: %v", err)
 		return
 	}
+	remoteIO = fm.NewLockedStream(remoteIO)
 
 	// 发送 StreamID
 	if err := remoteIO.Send(&pb.IOStreamData{Data: append([]byte{

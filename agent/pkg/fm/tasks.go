@@ -9,10 +9,33 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"sync"
 	"time"
 
 	pb "github.com/railzen/nezha-zero/agent/proto"
 )
+
+// lockedStream 串行化 Send/CloseSend：download 在独立协程中发送，gRPC 流不允许并发写
+type lockedStream struct {
+	pb.NezhaService_IOStreamClient
+	mu sync.Mutex
+}
+
+func NewLockedStream(stream pb.NezhaService_IOStreamClient) pb.NezhaService_IOStreamClient {
+	return &lockedStream{NezhaService_IOStreamClient: stream}
+}
+
+func (s *lockedStream) Send(data *pb.IOStreamData) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.NezhaService_IOStreamClient.Send(data)
+}
+
+func (s *lockedStream) CloseSend() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.NezhaService_IOStreamClient.CloseSend()
+}
 
 type Task struct {
 	taskClient pb.NezhaService_IOStreamClient
@@ -34,7 +57,7 @@ func (t *Task) DoTask(data *pb.IOStreamData) {
 	case 0:
 		t.listDir()
 	case 1:
-		go t.download()
+		go t.download(data)
 	case 2:
 		t.upload()
 	}
@@ -68,8 +91,8 @@ func (t *Task) listDir() {
 	t.taskClient.Send(&pb.IOStreamData{Data: td})
 }
 
-func (t *Task) download() {
-	path := string(t.remoteData.Data[1:])
+func (t *Task) download(data *pb.IOStreamData) {
+	path := string(data.Data[1:])
 	file, err := os.Open(path)
 	if err != nil {
 		t.printf("Error opening file: %s", err)

@@ -63,15 +63,20 @@ $download = "https://github.com/$agentrepo/releases/download/$agenttag/$file"
 Write-Host "Location:$region,connect directly!" -BackgroundColor DarkRed -ForegroundColor Green
 
 echo $download
-Invoke-WebRequest $download -OutFile "C:\nezha.zip"
+# Use a private per-run temp dir and only ever delete that dir
+$tmpdir = Join-Path $env:TEMP ("nezha-" + [guid]::NewGuid().ToString())
+New-Item -Path $tmpdir -ItemType Directory | Out-Null
+try {
+    Invoke-WebRequest $download -OutFile "$tmpdir\nezha.zip"
 #解压
-Expand-Archive "C:\nezha.zip" -DestinationPath "C:\temp" -Force
-if (!(Test-Path "C:\nezha")) { New-Item -Path "C:\nezha" -type directory }
+    Expand-Archive "$tmpdir\nezha.zip" -DestinationPath "$tmpdir\extract" -Force
+    if (!(Test-Path "C:\nezha")) { New-Item -Path "C:\nezha" -type directory }
 #整理文件
-Move-Item -Path "C:\temp\nezha-agent.exe" -Destination "C:\nezha\nezha-agent.exe"
+    Move-Item -Path "$tmpdir\extract\nezha-agent.exe" -Destination "C:\nezha\nezha-agent.exe"
+} finally {
 #清理垃圾
-Remove-Item "C:\nezha.zip"
-Remove-Item "C:\temp" -Recurse
+    Remove-Item $tmpdir -Recurse -Force -ErrorAction SilentlyContinue
+}
 #安装部分
 C:\nezha\nezha-agent.exe service install -s $server -p $key @extra
 #enjoy

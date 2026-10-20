@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -131,7 +132,7 @@ func ServeMultiplex(port uint, httpHandler http.Handler) error {
 
 	// 创建HTTP服务器
 	httpServer := &http.Server{
-		Handler:           h2c.NewHandler(multiplexHandler, &http2.Server{}),
+		Handler:           rejectH2CUpgradeWithBody(h2c.NewHandler(multiplexHandler, &http2.Server{})),
 		Addr:              fmt.Sprintf(":%d", port),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       60 * time.Second,
@@ -145,6 +146,19 @@ func ServeMultiplex(port uint, httpHandler http.Handler) error {
 
 	log.Printf("HTTP + gRPC multiplex server listening on :%d", port)
 	return httpServer.Serve(listen)
+}
+
+// rejectH2CUpgradeWithBody 拒绝带请求体的 h2c 升级请求。
+// x/net 的 h2c 升级路径会在调用内层 handler 前无上限地读完请求体，绕过 protectRequestBody 的大小与期限限制；
+// gRPC 客户端以 prior knowledge 直连，不依赖升级路径。
+func rejectH2CUpgradeWithBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ContentLength != 0 && httpguts.HeaderValuesContainsToken(r.Header["Upgrade"], "h2c") {
+			http.Error(w, "h2c upgrade with request body is not supported", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func DispatchTask(serviceSentinelDispatchBus <-chan model.Monitor) {

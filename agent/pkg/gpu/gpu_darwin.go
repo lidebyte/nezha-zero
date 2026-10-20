@@ -201,6 +201,7 @@ func findUtilization(key, dictKey string) (int, error) {
 		} else if result != 0 {
 			break
 		}
+		IOObjectRelease(service)
 	}
 
 	IOObjectRelease(service)
@@ -228,6 +229,7 @@ func findProperties(service ioRegistryEntry, key, dictKey uintptr) (string, int,
 			return bin, 0, nil
 		// PerformanceStatistics
 		case CFDictionaryGetTypeID():
+			defer CFRelease(ptrValue)
 			cfValue := CFDictionaryGetValue(ptrValue, dictKey)
 			if cfValue != nil {
 				var value int

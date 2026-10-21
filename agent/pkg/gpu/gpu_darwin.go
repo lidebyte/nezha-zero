@@ -3,6 +3,7 @@
 package gpu
 
 import (
+	"bytes"
 	"fmt"
 	"unsafe"
 
@@ -218,13 +219,18 @@ func findProperties(service ioRegistryEntry, key, dictKey uintptr) (string, int,
 		// model
 		case CFStringGetTypeID():
 			length := CFStringGetLength(ptrValue) + 1 // null terminator
-			buf := make([]byte, length-1)
+			// 缓冲区须容纳结尾 NUL，否则 CFStringGetCString 越界写 1 字节
+			buf := make([]byte, length)
 			CFStringGetCString(ptrValue, &buf[0], length, uint32(kCFStringEncodingUTF8))
 			CFRelease(ptrValue)
+			if i := bytes.IndexByte(buf, 0); i >= 0 {
+				buf = buf[:i]
+			}
 			return string(buf), 0, nil
 		case CFDataGetTypeID():
 			length := CFDataGetLength(ptrValue)
-			bin := unsafe.String((*byte)(CFDataGetBytePtr(ptrValue)), length)
+			// 释放前先拷贝，unsafe.String 别名 CF 内部缓冲区会在 CFRelease 后悬空
+			bin := string(unsafe.Slice((*byte)(CFDataGetBytePtr(ptrValue)), length))
 			CFRelease(ptrValue)
 			return bin, 0, nil
 		// PerformanceStatistics

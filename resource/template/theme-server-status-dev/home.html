@@ -126,7 +126,11 @@
                 if (document.visibilityState === "visible") {
                     setTimeout(() => {
                         if (document.hasFocus()) {
-                            this.connect();
+                            // 仅在连接已断开或长时间无数据（休眠唤醒后的假活连接）时重连，避免反复切换标签导致连接抖动
+                            const stale = !this._lastMessageAt || Date.now() - this._lastMessageAt > 10000;
+                            if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING || stale) {
+                                this.connect();
+                            }
                             this.scheduleResponsiveTableLayout();
                         }
                     }, 200);
@@ -545,18 +549,27 @@
                 return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + sizes[i];
             },
             connect() {
-                // 如果已经存在 WebSocket 连接并且处于开启状态，则不重复建立连接
-                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                // 取消尚未执行的自动重连，避免多条重连链并行
+                clearTimeout(this._reconnectTimer);
+                // 关闭旧连接（含仍在建立中的），并摘掉其回调，避免主动关闭触发 onclose 引发连锁重连
+                if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
                     console.log('Closing old WebSocket connection...');
+                    this.ws.onopen = null;
+                    this.ws.onmessage = null;
+                    this.ws.onclose = null;
+                    this.ws.onerror = null;
                     this.ws.close();
                 }
                 const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-                this.ws = new WebSocket(wsProtocol + '://' + window.location.host + '/ws');
+                const ws = new WebSocket(wsProtocol + '://' + window.location.host + '/ws');
+                this.ws = ws;
+                this._lastMessageAt = Date.now();
 
-                this.ws.onopen = function () {
+                ws.onopen = function () {
                     console.log("Connection open ...")
                 }
-                this.ws.onmessage = (evt) => {
+                ws.onmessage = (evt) => {
+                    this._lastMessageAt = Date.now();
                     let jsonData = evt.data
                     const data = JSON.parse(jsonData)
                     for (let i = 0; i < data.servers?.length; i++) {
@@ -588,13 +601,14 @@
                         });
                     }
                 }
-                this.ws.onclose = () => {
-                    setTimeout(() => {
+                ws.onclose = () => {
+                    clearTimeout(this._reconnectTimer);
+                    this._reconnectTimer = setTimeout(() => {
                         this.connect();
                     }, 5000);
                 };
-                this.ws.onerror = () => {
-                    this.ws.close()
+                ws.onerror = () => {
+                    ws.close()
                 }
             },
             handleNodes(servers) {

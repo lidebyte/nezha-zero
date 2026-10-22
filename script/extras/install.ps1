@@ -73,7 +73,7 @@ try {
     if (!(Test-Path "C:\nezha")) { New-Item -Path "C:\nezha" -type directory }
     icacls "C:\nezha" /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-545:(OI)(CI)RX" | Out-Null
 #整理文件
-    Move-Item -Path "$tmpdir\extract\nezha-agent.exe" -Destination "C:\nezha\nezha-agent.exe"
+    Copy-Item -Path "$tmpdir\extract\nezha-agent.exe" -Destination "C:\nezha\nezha-agent.exe"
 } finally {
 #清理垃圾
     Remove-Item $tmpdir -Recurse -Force -ErrorAction SilentlyContinue

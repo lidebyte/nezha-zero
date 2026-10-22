@@ -34,16 +34,19 @@ var updateNoRoute func()
 const requestBodyLimit int64 = 8 << 20
 
 const (
-	webSocketGlobalLimit        = 256
+	// 全局兜底须容纳各类名额之和，否则 NAT WebSocket 会话叠加首页 /ws 可占满全局名额、挤掉管理员终端/文件管理
+	webSocketGlobalLimit        = webSocketPublicLimit + webSocketAdminLimit + natGatewayLimit
 	webSocketPublicLimit        = 224
 	webSocketAdminLimit         = 32
 	publicWebSocketWriteTimeout = 90 * time.Second
+	natGatewayLimit = 128
 )
 
 var (
 	webSocketGlobalSlots = make(chan struct{}, webSocketGlobalLimit)
 	webSocketPublicSlots = make(chan struct{}, webSocketPublicLimit)
 	webSocketAdminSlots  = make(chan struct{}, webSocketAdminLimit)
+	natGatewaySlots      = make(chan struct{}, natGatewayLimit)
 )
 
 // limitAllWebSocketConnections is the final process-wide backstop. Route
@@ -488,8 +491,8 @@ func natGateway(c *gin.Context) {
 	if natConfig == nil {
 		return
 	}
-	// 所有 NAT 请求都占用公开名额，避免普通 HTTP 请求挤占管理员终端/文件管理的流位
-	release, ok := acquireWebSocketSlot(c, webSocketPublicSlots, "public")
+	// 所有 NAT 请求都占用 NAT 名额，避免普通 HTTP 请求挤占管理员终端/文件管理的流位与首页实时数据
+	release, ok := acquireWebSocketSlot(c, natGatewaySlots, "nat")
 	if !ok {
 		return
 	}

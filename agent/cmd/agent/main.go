@@ -1364,6 +1364,7 @@ func handleTerminalTask(task *pb.Task) {
 	tty, err := pty.Start()
 	if err != nil {
 		printf("Terminal pty.Start失败 %v", err)
+		remoteIO.CloseSend()
 		return
 	}
 
@@ -1423,7 +1424,10 @@ func handleNATTask(task *pb.Task) {
 		return
 	}
 
-	remoteIO, err := client.IOStream(context.Background())
+	// 任何退出路径都取消流，避免面板侧会话因收不到结束信号而永久挂起
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	remoteIO, err := client.IOStream(ctx)
 	if err != nil {
 		printf("NAT IOStream失败: %v", err)
 		return
@@ -1437,9 +1441,10 @@ func handleNATTask(task *pb.Task) {
 		return
 	}
 
-	conn, err := net.Dial("tcp", nat.Host)
+	conn, err := net.DialTimeout("tcp", nat.Host, time.Second*10)
 	if err != nil {
 		printf("NAT Dial %s 失败：%s", nat.Host, err)
+		remoteIO.CloseSend()
 		return
 	}
 

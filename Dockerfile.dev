@@ -1,5 +1,5 @@
 # Use build arguments for Go version and architecture
-ARG GO_VERSION=1.26
+ARG GO_VERSION=1.27
 ARG BUILDARCH=amd64
 
 # Stage 1: Builder Stage

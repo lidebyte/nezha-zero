@@ -40,6 +40,15 @@ const (
 	bootTimeToleranceSeconds  = 5
 )
 
+// isValidDDNSIP 校验 DDNS 使用的 IP：空串表示未上报该协议栈；非空时必须是对应协议的合法地址
+func isValidDDNSIP(ip string, v6 bool) bool {
+	if ip == "" {
+		return true
+	}
+	addr := net.ParseIP(ip)
+	return addr != nil && (addr.To4() == nil) == v6
+}
+
 func bootTimeIndicatesReboot(oldBootTime, newBootTime uint64) bool {
 	return oldBootTime > 0 &&
 		newBootTime > oldBootTime &&
@@ -415,8 +424,10 @@ func (s *NezhaHandler) ReportSystemInfo(c context.Context, r *pb.Host) (*pb.Rece
 	if server.EnableDDNS && host.IP != "" &&
 		(server.Host == nil || server.Host.IP != host.IP) {
 		ipv4, ipv6, _ := utils.SplitIPAddr(host.IP)
-		providers, err := singleton.GetDDNSProvidersFromProfiles(server.DDNSProfiles, &ddns.IP{Ipv4Addr: ipv4, Ipv6Addr: ipv6})
-		if err == nil {
+		// IP 会被代入 DDNS webhook 模板，非法值直接放弃本次更新，防止注入请求体/请求头
+		if !isValidDDNSIP(ipv4, false) || !isValidDDNSIP(ipv6, true) {
+			log.Printf("NEZHA>> 服务器 %d 上报的 IP 格式非法，跳过 DDNS 更新", clientID)
+		} else if providers, err := singleton.GetDDNSProvidersFromProfiles(server.DDNSProfiles, &ddns.IP{Ipv4Addr: ipv4, Ipv6Addr: ipv6}); err == nil {
 			ddnsProviders = providers
 		} else {
 			log.Printf("NEZHA>> 获取DDNS配置时发生错误: %v", err)

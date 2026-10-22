@@ -121,6 +121,7 @@ var (
 const (
 	delayWhenError = time.Second * 10 // Agent 重连间隔
 	networkTimeOut = time.Second * 5  // 普通网络超时
+	maxAltSvcHops  = 3                // Alt-Svc 最多跟进跳数，防止端点互相指向时无限递归
 )
 
 func init() {
@@ -1164,10 +1165,10 @@ func handleHttpGetTask(task *pb.Task, result *pb.TaskResult) {
 	start := time.Now()
 	taskUrl := task.GetData()
 	resp, err := httpClient.Get(taskUrl)
-	checkHttpResp(taskUrl, start, resp, err, result)
+	checkHttpResp(taskUrl, start, resp, err, result, 0)
 }
 
-func checkHttpResp(taskUrl string, start time.Time, resp *http.Response, err error, result *pb.TaskResult) {
+func checkHttpResp(taskUrl string, start time.Time, resp *http.Response, err error, result *pb.TaskResult, hops int) {
 	if err == nil {
 		defer resp.Body.Close()
 		_, err = io.Copy(io.Discard, resp.Body)
@@ -1187,7 +1188,7 @@ func checkHttpResp(taskUrl string, start time.Time, resp *http.Response, err err
 		}
 		altSvc := resp.Header.Get("Alt-Svc")
 		if altSvc != "" {
-			checkAltSvc(start, altSvc, taskUrl, result)
+			checkAltSvc(start, altSvc, taskUrl, result, hops)
 		} else {
 			result.Successful = true
 		}
@@ -1197,7 +1198,12 @@ func checkHttpResp(taskUrl string, start time.Time, resp *http.Response, err err
 	}
 }
 
-func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.TaskResult) {
+func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.TaskResult, hops int) {
+	if hops >= maxAltSvcHops {
+		// 主端点已响应成功，达到跳数上限后不再跟进剩余通告
+		result.Successful = true
+		return
+	}
 	altSvcList, err := altsvc.Parse(altSvcStr)
 	if err != nil {
 		result.Data = err.Error()
@@ -1221,12 +1227,20 @@ func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.T
 	altAuthorityPort := ""
 	altAuthorityProtocol := ""
 	for _, altSvc := range altSvcList {
+		// clear 指令和缺少端口的条目没有可跟进的备用端点
+		if altSvc.Clear || altSvc.AltAuthority.Port == "" {
+			continue
+		}
 		altAuthorityPort = altSvc.AltAuthority.Port
 		if altSvc.AltAuthority.Host != "" {
 			altAuthorityHost = altSvc.AltAuthority.Host
 			altAuthorityProtocol = altSvc.ProtocolID
 			break
 		}
+	}
+	if altAuthorityPort == "" {
+		result.Successful = true
+		return
 	}
 	if altAuthorityHost == "" {
 		altAuthorityHost = originalHost
@@ -1246,7 +1260,7 @@ func checkAltSvc(start time.Time, altSvcStr string, taskUrl string, result *pb.T
 	}
 	resp, err := client.Do(req)
 
-	checkHttpResp(altAuthorityUrl, start, resp, err, result)
+	checkHttpResp(altAuthorityUrl, start, resp, err, result, hops+1)
 }
 
 func handleCommandTask(task *pb.Task, result *pb.TaskResult) {

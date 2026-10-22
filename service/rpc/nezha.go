@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"strings"
 	"sync"
@@ -162,6 +163,10 @@ func (s *NezhaHandler) ReportTask(c context.Context, r *pb.TaskResult) (*pb.Rece
 	}
 	if !singleton.ConsumeTaskResultAuthorization(clientID, r.GetType(), r.GetId()) {
 		return nil, status.Error(codes.PermissionDenied, "task result was not requested")
+	}
+	// Delay 会参与服务监控均值计算并被 JSON 序列化，NaN/Inf 会污染整日及 30 天统计
+	if d := float64(r.GetDelay()); math.IsNaN(d) || math.IsInf(d, 0) {
+		r.Delay = 0
 	}
 	if r.GetType() == model.TaskTypeCommand {
 		// 处理上报的计划任务

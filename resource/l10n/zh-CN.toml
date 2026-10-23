@@ -1057,6 +1057,15 @@ other = "身份验证已完成，请输入动态验证码继续登录"
 [TwoFactorLoginRestart]
 other = "重新登录"
 
+[TwoFactorGrantTitle]
+other = "敏感操作验证"
+
+[TwoFactorGrantPrompt]
+other = "该操作可直接在服务器上执行命令，请输入动态验证码。验证通过后 30 分钟内无需重复验证。"
+
+[TwoFactorGrantVerify]
+other = "验证"
+
 [EditPublicNote]
 other = "编辑公开备注"
 

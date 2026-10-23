@@ -605,6 +605,12 @@ function addOrEditDDNS(ddns) {
 }
 
 function addOrEditNAT(nat) {
+  requireTwoFactorGrant(function () {
+    showNATModal(nat);
+  });
+}
+
+function showNATModal(nat) {
   const modal = $(".nat.modal");
   modal.children(".header").text((nat ? LANG.Edit : LANG.Add));
   modal
@@ -626,8 +632,96 @@ function addOrEditNAT(nat) {
   );
 }
 
+// 敏感操作二次验证授权：启用双重验证后，终端、文件管理、计划任务、NAT
+// 需在验证通过后的 30 分钟内操作；已授权或无需授权时直接执行 callback。
+function requireTwoFactorGrant(callback) {
+  if ($(".two-factor-grant.modal").length === 0) {
+    callback();
+    return;
+  }
+  $.get("/api/two-factor-grant")
+    .done(function (resp) {
+      if (resp.code != 200) {
+        alert("操作失败 " + resp.code + "：" + resp.message);
+      } else if (!resp.result || !resp.result.required || resp.result.remaining > 0) {
+        callback();
+      } else {
+        showTwoFactorGrantModal(callback);
+      }
+    })
+    .fail(function (err) {
+      alert("网络错误：" + err.responseText);
+    });
+}
+
+function verifyTwoFactorGrant(code) {
+  return $.ajax({
+    url: "/api/two-factor-grant",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({ TwoFactorCode: code }),
+  });
+}
+
+function showTwoFactorGrantModal(callback) {
+  const modal = $(".two-factor-grant.modal");
+  const form = modal.find("form");
+  const btn = modal.find(".nezha-primary-btn.button");
+  const input = form.find("input[name=TwoFactorCode]");
+  let verified = false;
+  form.children(".message").remove();
+  input.val("");
+  btn.removeClass("loading");
+  input.off("keydown.twoFactorGrant").on("keydown.twoFactorGrant", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      btn.trigger("click");
+    }
+  });
+  modal
+    .modal({
+      closable: false,
+      autofocus: false,
+      onVisible: function () {
+        input.trigger("focus");
+      },
+      onApprove: function () {
+        if (btn.hasClass("loading")) {
+          return false;
+        }
+        form.children(".message").remove();
+        btn.addClass("loading");
+        verifyTwoFactorGrant(input.val())
+          .done(function (resp) {
+            if (resp.code == 200) {
+              verified = true;
+              modal.modal("hide");
+            } else {
+              form.append($('<div class="ui negative message"></div>').text(resp.message));
+            }
+          })
+          .fail(function (err) {
+            form.append($('<div class="ui negative message"></div>').text("网络错误：" + err.responseText));
+          })
+          .always(function () {
+            btn.removeClass("loading");
+          });
+        return false;
+      },
+      // 等验证弹窗完全关闭后再继续，避免与随后打开的表单弹窗冲突
+      onHidden: function () {
+        if (verified) {
+          callback();
+        }
+      },
+    })
+    .modal("show");
+}
+
 function connectToServer(id) {
-  post('/terminal', { Host: window.location.host, Protocol: window.location.protocol, ID: id })
+  requireTwoFactorGrant(function () {
+    post('/terminal', { Host: window.location.host, Protocol: window.location.protocol, ID: id })
+  });
 }
 
 function post(path, params, method = 'post') {
@@ -868,6 +962,12 @@ function addOrEditMonitor(monitor) {
 }
 
 function addOrEditCron(cron) {
+  requireTwoFactorGrant(function () {
+    showCronModal(cron);
+  });
+}
+
+function showCronModal(cron) {
   const modal = $(".cron.modal");
   modal.children(".header").text((cron ? LANG.Edit : LANG.Add) + ' ' + LANG.Cron);
   modal
@@ -936,6 +1036,12 @@ function deleteRequest(api) {
 }
 
 function manualTrigger(btn, cronId) {
+  requireTwoFactorGrant(function () {
+    triggerCron(btn, cronId);
+  });
+}
+
+function triggerCron(btn, cronId) {
   $(btn).toggleClass("loading");
   $.ajax({
     url: "/api/cron/" + cronId + "/manual",

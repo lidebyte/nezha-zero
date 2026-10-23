@@ -6,17 +6,70 @@
             <h2 class="ui image header">
                 <img src="/static/logo.svg?v20210804" class="image">
                 <div class="content">
-                    {{tr "AccessDenied"}}
+                    {{if .TwoFactorGrantAction}}{{tr "TwoFactorGrantTitle"}}{{else}}{{tr "AccessDenied"}}{{end}}
                 </div>
             </h2>
+            {{if .TwoFactorGrantAction}}
+            <form id="twoFactorGrantPageForm" class="ui large form" onsubmit="return false;">
+                <div class="field">
+                    <div class="ui left icon input">
+                        <i class="shield alternate icon"></i>
+                        <input type="text" name="TwoFactorCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autofocus oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)">
+                    </div>
+                </div>
+                <button type="submit" class="ui fluid large nezha-primary-btn submit button">{{tr "TwoFactorGrantVerify"}}</button>
+            </form>
+            <div class="ui message">
+                <p>{{tr "TwoFactorGrantPrompt"}}</p>
+            </div>
+            <form id="twoFactorGrantResubmitForm" method="post" action="{{.TwoFactorGrantAction}}">
+                {{range $name, $value := .TwoFactorGrantFields}}
+                <input type="hidden" name="{{$name}}" value="{{$value}}">
+                {{end}}
+            </form>
+            {{else}}
             <div class="ui message">
                 <p>
                     {{.Msg}}
                 </p>
                 <a href="{{.Link}}">{{.Btn}}</a>
             </div>
+            {{end}}
         </div>
     </div>
 </div>
 {{template "common/footer" .}}
+{{if .TwoFactorGrantAction}}
+<script>
+    // 敏感操作授权失效时的验证页：验证通过后以原参数重新提交
+    (function () {
+        const form = $("#twoFactorGrantPageForm");
+        form.on("submit", function () {
+            const btn = form.find(".submit.button");
+            if (btn.hasClass("loading")) return;
+            form.find(".message").remove();
+            btn.addClass("loading");
+            verifyTwoFactorGrant(form.find("input[name=TwoFactorCode]").val())
+                .done(function (resp) {
+                    if (resp.code == 200) {
+                        const resubmit = document.getElementById("twoFactorGrantResubmitForm");
+                        const csrf = document.createElement("input");
+                        csrf.type = "hidden";
+                        csrf.name = "_csrf";
+                        csrf.value = getCSRFToken();
+                        resubmit.appendChild(csrf);
+                        resubmit.submit();
+                        return;
+                    }
+                    btn.removeClass("loading");
+                    form.append($('<div class="ui negative message"></div>').text(resp.message));
+                })
+                .fail(function (err) {
+                    btn.removeClass("loading");
+                    form.append($('<div class="ui negative message"></div>').text("网络错误：" + err.responseText));
+                });
+        });
+    })();
+</script>
+{{end}}
 {{end}}

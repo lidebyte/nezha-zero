@@ -1048,6 +1048,15 @@ other = "La autenticación ha finalizado. Introduzca el código de autenticació
 [TwoFactorLoginRestart]
 other = "Volver a iniciar sesión"
 
+[TwoFactorGrantTitle]
+other = "Verificar operación sensible"
+
+[TwoFactorGrantPrompt]
+other = "Esta operación puede ejecutar comandos directamente en sus servidores. Introduzca el código de verificación; no se volverá a solicitar durante los próximos 30 minutos."
+
+[TwoFactorGrantVerify]
+other = "Verificar"
+
 [EditPublicNote]
 other = "Editar nota pública"
 

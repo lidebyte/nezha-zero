@@ -1057,6 +1057,15 @@ other = "Authentication is complete. Enter your authentication code to continue.
 [TwoFactorLoginRestart]
 other = "Start over"
 
+[TwoFactorGrantTitle]
+other = "Verify Sensitive Operation"
+
+[TwoFactorGrantPrompt]
+other = "This operation can run commands directly on your servers. Enter your authenticator code; no further verification is needed for the next 30 minutes."
+
+[TwoFactorGrantVerify]
+other = "Verify"
+
 [EditPublicNote]
 other = "Edit Public Note"
 

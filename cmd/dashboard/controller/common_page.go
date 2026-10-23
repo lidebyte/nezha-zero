@@ -523,6 +523,17 @@ func (cp *commonPage) terminal(c *gin.Context) {
 	rpc.NezhaHandlerSingleton.StartTerminalStream(streamId, time.Second*10)
 }
 
+// showTwoFactorGrantPage 页面类敏感操作未授权时渲染验证页，验证通过后以原参数重新提交到 action。
+func showTwoFactorGrantPage(c *gin.Context, action string, fields map[string]string) {
+	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/error", mygin.CommonEnvironment(c, gin.H{
+		"Title": singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{
+			MessageID: "TwoFactorGrantTitle",
+		}),
+		"TwoFactorGrantAction": action,
+		"TwoFactorGrantFields": fields,
+	}))
+}
+
 type createTerminalRequest struct {
 	Host     string
 	Protocol string
@@ -541,6 +552,14 @@ func (cp *commonPage) createTerminal(c *gin.Context) {
 		return
 	}
 	if mygin.BlockIfNotSuperAdmin(c, true) {
+		return
+	}
+	if !mygin.TwoFactorGranted(c) {
+		showTwoFactorGrantPage(c, "/terminal", map[string]string{
+			"Host":     c.PostForm("Host"),
+			"Protocol": c.PostForm("Protocol"),
+			"ID":       c.PostForm("ID"),
+		})
 		return
 	}
 	var createTerminalReq createTerminalRequest
@@ -701,6 +720,10 @@ func (cp *commonPage) createFM(c *gin.Context) {
 		return
 	}
 	if mygin.BlockIfNotSuperAdmin(c, true) {
+		return
+	}
+	if !mygin.TwoFactorGranted(c) {
+		showTwoFactorGrantPage(c, "/file", map[string]string{"id": c.PostForm("id")})
 		return
 	}
 	IdString := c.PostForm("id")

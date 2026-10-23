@@ -1057,6 +1057,15 @@ other = "身分驗證已完成，請輸入動態驗證碼繼續登入"
 [TwoFactorLoginRestart]
 other = "重新登入"
 
+[TwoFactorGrantTitle]
+other = "敏感操作驗證"
+
+[TwoFactorGrantPrompt]
+other = "此操作可直接在伺服器上執行指令，請輸入動態驗證碼。驗證通過後 30 分鐘內無需重複驗證。"
+
+[TwoFactorGrantVerify]
+other = "驗證"
+
 [EditPublicNote]
 other = "編輯公開備註"
 

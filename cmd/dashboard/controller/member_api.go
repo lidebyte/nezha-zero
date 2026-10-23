@@ -57,10 +57,7 @@ func (ma *memberAPI) serve() {
 	wr := mr.Group("")
 	wr.Use(mygin.RequireSuperAdmin())
 	wr.POST("/monitor", ma.addOrEditMonitor)
-	wr.POST("/cron", ma.addOrEditCron)
-	wr.POST("/cron/:id/manual", ma.manualTrigger)
 	wr.POST("/force-update", ma.forceUpdate)
-	wr.POST("/nat", ma.addOrEditNAT)
 	wr.POST("/alert-rule", ma.addOrEditAlertRule)
 	wr.POST("/subscription", ma.addOrEditSubscription)
 	wr.POST("/batch-update-subscription-group", ma.batchUpdateSubscriptionGroup)
@@ -76,6 +73,15 @@ func (ma *memberAPI) serve() {
 	wr.GET("/log", ma.listLogs)
 	wr.DELETE("/token/:token", ma.deleteToken)
 	wr.DELETE("/:model/:id", ma.delete)
+	wr.GET("/two-factor-grant", ma.twoFactorGrantStatus)
+	wr.POST("/two-factor-grant", ma.twoFactorGrantVerify)
+
+	// 可直接在服务器上执行代码的操作，启用双重验证后需在二次验证授权有效期内
+	gr := wr.Group("")
+	gr.Use(mygin.RequireTwoFactorGrant())
+	gr.POST("/cron", ma.addOrEditCron)
+	gr.POST("/cron/:id/manual", ma.manualTrigger)
+	gr.POST("/nat", ma.addOrEditNAT)
 
 	// API
 	v1 := ma.r.Group("v1")
@@ -1499,6 +1505,7 @@ func (ma *memberAPI) logout(c *gin.Context) {
 		})
 	*/
 	singleton.DB.Unscoped().Where("id = ? AND token = ?", admin.ID, admin.Token).Delete(&model.User{})
+	mygin.RevokeTwoFactorGrant(admin.Token)
 	mygin.ClearSessionCookies(c)
 	c.JSON(http.StatusOK, model.Response{
 		Code: http.StatusOK,
@@ -1509,6 +1516,86 @@ func (ma *memberAPI) logout(c *gin.Context) {
 		// 重定向到 OIDC 退出登录地址。不知道为什么，这里的重定向不生效
 		c.Redirect(http.StatusOK, oidcLogoutUrl)
 	}
+}
+
+type twoFactorGrantForm struct {
+	TwoFactorCode string
+}
+
+// twoFactorGrantStatus 返回当前会话的敏感操作授权状态，remaining 为剩余秒数。
+func (ma *memberAPI) twoFactorGrantStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, model.Response{
+		Code: http.StatusOK,
+		Result: gin.H{
+			"required":  mygin.TwoFactorGrantRequired(),
+			"remaining": int(mygin.TwoFactorGrantRemaining(c).Seconds()),
+		},
+	})
+}
+
+// twoFactorGrantVerify 校验动态验证码，为当前会话授予 mygin.TwoFactorGrantTTL 的敏感操作授权。
+func (ma *memberAPI) twoFactorGrantVerify(c *gin.Context) {
+	var sf twoFactorGrantForm
+	if err := c.ShouldBindJSON(&sf); err != nil {
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("请求错误：%s", err),
+		})
+		return
+	}
+	if !mygin.TwoFactorGrantRequired() {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
+		return
+	}
+	if !allowAuthRateLimitedCheck(c) {
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusTooManyRequests,
+			Message: "请求过于频繁，请稍后再试",
+		})
+		return
+	}
+	if mygin.TwoFactorGrantLocked(c) {
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusForbidden,
+			Message: "验证码错误次数过多，请重新登录后再试",
+		})
+		return
+	}
+	if strings.TrimSpace(sf.TwoFactorCode) == "" {
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: "请输入当前双重验证码",
+		})
+		return
+	}
+	if message := validateSettingChangeTwoFactor(true, singleton.Conf.Site.TwoFactorSecret, sf.TwoFactorCode); message != "" {
+		left := mygin.RecordTwoFactorGrantFailure(c)
+		audit.Record(c, audit.TypeSecurity, "Two-factor grant verification failed", "invalid two-factor code")
+		if left <= 0 {
+			message = "验证码错误次数过多，请重新登录后再试"
+		}
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusBadRequest,
+			Message: message,
+		})
+		return
+	}
+	if !mygin.GrantTwoFactor(c) {
+		c.JSON(http.StatusOK, model.Response{
+			Code:    http.StatusForbidden,
+			Message: "当前登录会话不支持敏感操作授权",
+		})
+		return
+	}
+	audit.Record(c, audit.TypeSecurity, "Two-factor grant issued",
+		fmt.Sprintf("sensitive operations unlocked for %d minutes", int(mygin.TwoFactorGrantTTL.Minutes())))
+	c.JSON(http.StatusOK, model.Response{
+		Code: http.StatusOK,
+		Result: gin.H{
+			"required":  true,
+			"remaining": int(mygin.TwoFactorGrantTTL.Seconds()),
+		},
+	})
 }
 
 type settingForm struct {
@@ -2028,6 +2115,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 			})
 			return
 		}
+		mygin.ResetTwoFactorGrants()
 		c.JSON(http.StatusOK, model.Response{
 			Code:    http.StatusOK,
 			Message: "双重验证已启用",
@@ -2077,6 +2165,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 			})
 			return
 		}
+		mygin.ResetTwoFactorGrants()
 		c.JSON(http.StatusOK, model.Response{
 			Code:    http.StatusOK,
 			Message: "双重验证已关闭",

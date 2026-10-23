@@ -9,4 +9,34 @@
         </button>
     </div>
 </div>
+{{if .IsAdminPage}}
+<style>
+    .ui.two-factor-grant.modal {
+        width: min(380px, calc(100% - 2rem)) !important;
+    }
+
+    .ui.two-factor-grant.modal #twoFactorGrantForm {
+        margin-top: 1rem;
+    }
+</style>
+<div class="ui small two-factor-grant modal transition hidden">
+    <div class="header">{{tr "TwoFactorGrantTitle"}}</div>
+    <div class="content">
+        <p>{{tr "TwoFactorGrantPrompt"}}</p>
+        <form id="twoFactorGrantForm" class="ui form" onsubmit="return false;">
+            <div class="field">
+                <div class="ui left icon input">
+                    <i class="shield alternate icon"></i>
+                    <input type="text" name="TwoFactorCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="actions">
+        <div class="ui negative button">{{tr "Cancel"}}</div>
+        <button class="ui positive nezha-primary-btn right labeled icon button">{{tr "TwoFactorGrantVerify"}}<i class="shield alternate icon"></i>
+        </button>
+    </div>
+</div>
+{{end}}
 {{end}}

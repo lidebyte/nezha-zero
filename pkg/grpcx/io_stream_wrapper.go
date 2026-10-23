@@ -3,6 +3,7 @@ package grpcx
 import (
 	"context"
 	"io"
+	"sync"
 	"sync/atomic"
 
 	"github.com/railzen/nezha-zero/proto"
@@ -21,6 +22,8 @@ type IOStreamWrapper struct {
 	dataBuf []byte
 	closed  *atomic.Bool
 	closeCh chan struct{}
+	// gRPC 不允许并发 Send，转发协程与终端心跳会同时写
+	sendLock sync.Mutex
 }
 
 func NewIOStreamWrapper(stream IOStream) *IOStreamWrapper {
@@ -49,6 +52,8 @@ func (iw *IOStreamWrapper) Read(p []byte) (n int, err error) {
 }
 
 func (iw *IOStreamWrapper) Write(p []byte) (n int, err error) {
+	iw.sendLock.Lock()
+	defer iw.sendLock.Unlock()
 	err = iw.Send(&proto.IOStreamData{Data: p})
 	return len(p), err
 }

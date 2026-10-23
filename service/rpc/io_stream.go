@@ -34,7 +34,14 @@ const (
 	ioStreamLimit           = 256
 	// 首帧 stream id 等待上限：避免已鉴权 agent 占槽后永不 Recv 导致永久耗尽
 	ioStreamIDTimeout = 2 * time.Minute
+	// 终端空闲时 IOStream 上没有应用层数据，CF 等 CDN 的 Proxy Read Timeout（125s）会断流；
+	// HTTP/2 PING 是逐跳的不会透传，需要面板主动向 agent 发数据保活
+	terminalKeepaliveInterval = 30 * time.Second
 )
+
+// agent 终端接收循环只处理首字节 0(输入)/1(resize)，无 default 分支，
+// 未知首字节会被新旧版本 agent 直接忽略；不能为空，空包会让 agent 退出终端
+var terminalKeepalivePayload = []byte{0xff}
 
 func (s *NezhaHandler) CreateStream(streamId string) error {
 	s.ioStreamMutex.Lock()
@@ -134,6 +141,16 @@ func (s *NezhaHandler) AgentConnected(streamId string, agentIo io.ReadWriteClose
 }
 
 func (s *NezhaHandler) StartStream(streamId string, timeout time.Duration) error {
+	return s.startStream(streamId, timeout, false)
+}
+
+// StartTerminalStream 同 StartStream，额外定期向 agent 发送终端心跳；
+// 仅适用于终端流，文件管理/NAT 的数据会被注入的心跳污染
+func (s *NezhaHandler) StartTerminalStream(streamId string, timeout time.Duration) error {
+	return s.startStream(streamId, timeout, true)
+}
+
+func (s *NezhaHandler) startStream(streamId string, timeout time.Duration, terminalKeepalive bool) error {
 	stream, err := s.GetStream(streamId)
 	if err != nil {
 		return err
@@ -197,6 +214,22 @@ LOOP:
 			close(endCh)
 		}
 	}()
+	if terminalKeepalive {
+		go func() {
+			ticker := time.NewTicker(terminalKeepaliveInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-endCh:
+					return
+				case <-ticker.C:
+					if _, err := stream.agentIo.Write(terminalKeepalivePayload); err != nil {
+						return
+					}
+				}
+			}
+		}()
+	}
 
 	<-endCh
 	return <-doneErrCh

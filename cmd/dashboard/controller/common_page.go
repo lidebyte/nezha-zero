@@ -520,7 +520,7 @@ func (cp *commonPage) terminal(c *gin.Context) {
 		return
 	}
 
-	rpc.NezhaHandlerSingleton.StartStream(streamId, time.Second*10)
+	rpc.NezhaHandlerSingleton.StartTerminalStream(streamId, time.Second*10)
 }
 
 type createTerminalRequest struct {

@@ -358,9 +358,7 @@ func (s *NezhaHandler) RequestTask(h *pb.Host, stream pb.NezhaService_RequestTas
 		return status.Errorf(codes.Unauthenticated, "客户端认证失败")
 	}
 	// 修复不断的请求 task 但是没有 return 导致内存泄漏
-	if server.TaskClose != nil {
-		close(server.TaskClose)
-	}
+	model.CloseTaskChan(server.TaskClose)
 	server.TaskStream = stream
 	server.TaskClose = closeCh
 	singleton.ServerLock.Unlock()

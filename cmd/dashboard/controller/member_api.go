@@ -2252,9 +2252,7 @@ func onServerDeleteWithTaskClose(id uint64) {
 	if singleton.ServerList[id] != server {
 		return
 	}
-	if server.TaskClose != nil {
-		close(server.TaskClose)
-	}
+	model.CloseTaskChan(server.TaskClose)
 	server.TaskClose = nil
 	server.TaskStream = nil
 	onServerDelete(id)

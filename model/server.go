@@ -15,6 +15,23 @@ import (
 
 const TaskDispatchSlotLimit = 32
 
+const taskSendTimeout = 10 * time.Second
+
+var errTaskSendTimeout = errors.New("send task timeout; task stream evicted")
+
+// CloseTaskChan 幂等关闭任务流关闭通道。
+// 调用方必须持有对应的 TaskCloseLock；该通道只用于关闭通知，不传输数据。
+func CloseTaskChan(ch chan error) {
+	if ch == nil {
+		return
+	}
+	select {
+	case <-ch:
+	default:
+		close(ch)
+	}
+}
+
 type Server struct {
 	Common
 	Name         string
@@ -102,6 +119,12 @@ func (s *Server) RuntimeSnapshot() (*Host, *HostState, time.Time, uint64, uint64
 }
 
 func (s *Server) SendTask(task *pb.Task) error {
+	return s.sendTaskWithTimeout(task, taskSendTimeout)
+}
+
+// sendTaskWithTimeout 限制单次任务下发时间。超时通过关闭对应的 TaskClose
+// 让 RequestTask 返回并取消 gRPC 流，确保底层 Send 也能退出，而不只是让调用方超时。
+func (s *Server) sendTaskWithTimeout(task *pb.Task, timeout time.Duration) error {
 	if s == nil {
 		return errors.New("server is nil")
 	}
@@ -117,12 +140,50 @@ func (s *Server) SendTask(task *pb.Task) error {
 
 	s.TaskCloseLock.Lock()
 	taskStream := s.TaskStream
+	taskClose := s.TaskClose
 	s.TaskCloseLock.Unlock()
 
 	if taskStream == nil {
 		return errors.New("task stream is nil")
 	}
-	return taskStream.Send(task)
+	if taskClose == nil {
+		return errors.New("task close channel is nil")
+	}
+
+	var completionMu sync.Mutex
+	completed, evicted := false, false
+	timer := time.AfterFunc(timeout, func() {
+		completionMu.Lock()
+		defer completionMu.Unlock()
+		if completed {
+			return
+		}
+
+		s.TaskCloseLock.Lock()
+		defer s.TaskCloseLock.Unlock()
+
+		// 发送期间流可能已正常关闭或被新连接替换，不能误关新流。
+		if s.TaskStream != taskStream || s.TaskClose != taskClose {
+			return
+		}
+
+		CloseTaskChan(taskClose)
+		s.TaskClose = nil
+		s.TaskStream = nil
+		evicted = true
+	})
+
+	err := taskStream.Send(task)
+	timer.Stop()
+
+	completionMu.Lock()
+	completed = true
+	timedOut := evicted
+	completionMu.Unlock()
+	if timedOut {
+		return errTaskSendTimeout
+	}
+	return err
 }
 
 func (s *Server) AfterFind(tx *gorm.DB) error {

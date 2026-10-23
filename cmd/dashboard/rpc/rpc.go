@@ -116,7 +116,7 @@ func ServeMultiplex(port uint, httpHandler http.Handler) error {
 		// 检查是否为gRPC请求
 		if r.ProtoMajor == 2 &&
 			r.Header.Get("Content-Type") == "application/grpc" {
-			grpcServer.ServeHTTP(w, r)
+			serveGRPCWithAbort(grpcServer, w, r)
 			return
 		}
 
@@ -146,6 +146,33 @@ func ServeMultiplex(port uint, httpHandler http.Handler) error {
 
 	log.Printf("HTTP + gRPC multiplex server listening on :%d", port)
 	return httpServer.Serve(listen)
+}
+
+// serveGRPCWithAbort 为复用模式的 gRPC 请求注入中断函数，供 SendTask 超时驱逐时调用。
+// 该模式下 gRPC 写操作在本 HTTP 处理协程内执行，对端不读时阻塞在 HTTP/2 流控上：
+// 取消上下文让阻塞中的 Send 返回，立即到期的写期限让 HTTP/2 重置该流、解除底层写入。
+func serveGRPCWithAbort(grpcServer *grpc.Server, w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	var mu sync.Mutex
+	served := false
+	abort := func() {
+		cancel()
+		mu.Lock()
+		defer mu.Unlock()
+		// 处理函数返回后 ResponseWriter 不可再用
+		if !served {
+			_ = http.NewResponseController(w).SetWriteDeadline(time.Now())
+		}
+	}
+	defer func() {
+		mu.Lock()
+		served = true
+		mu.Unlock()
+	}()
+
+	grpcServer.ServeHTTP(w, r.WithContext(model.WithTaskStreamAbort(ctx, abort)))
 }
 
 // rejectH2CUpgradeWithBody 拒绝带请求体的 h2c 升级请求。

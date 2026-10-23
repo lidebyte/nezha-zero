@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -18,6 +19,15 @@ const TaskDispatchSlotLimit = 32
 const taskSendTimeout = 10 * time.Second
 
 var errTaskSendTimeout = errors.New("send task timeout; task stream evicted")
+
+type taskStreamAbortKey struct{}
+
+// WithTaskStreamAbort 为端口复用模式的 gRPC 请求注入中断函数。
+// 该模式下 gRPC 走 ServeHTTP，写操作在 HTTP 处理协程内执行，流控阻塞时仅让 RequestTask 返回无法解除；
+// 超时驱逐时调用 abort 中断该请求，阻塞中的 Send 和底层写入才会退出。
+func WithTaskStreamAbort(ctx context.Context, abort func()) context.Context {
+	return context.WithValue(ctx, taskStreamAbortKey{}, abort)
+}
 
 // CloseTaskChan 幂等关闭任务流关闭通道。
 // 调用方必须持有对应的 TaskCloseLock；该通道只用于关闭通知，不传输数据。
@@ -160,17 +170,19 @@ func (s *Server) sendTaskWithTimeout(task *pb.Task, timeout time.Duration) error
 		}
 
 		s.TaskCloseLock.Lock()
-		defer s.TaskCloseLock.Unlock()
-
 		// 发送期间流可能已正常关闭或被新连接替换，不能误关新流。
-		if s.TaskStream != taskStream || s.TaskClose != taskClose {
-			return
+		if s.TaskStream == taskStream && s.TaskClose == taskClose {
+			CloseTaskChan(taskClose)
+			s.TaskClose = nil
+			s.TaskStream = nil
+			evicted = true
 		}
+		s.TaskCloseLock.Unlock()
 
-		CloseTaskChan(taskClose)
-		s.TaskClose = nil
-		s.TaskStream = nil
-		evicted = true
+		// 捕获的旧流无论是否已被替换都要中断：复用模式下旧流的阻塞写不会随 RequestTask 返回而解除。
+		if abort, ok := taskStream.Context().Value(taskStreamAbortKey{}).(func()); ok {
+			abort()
+		}
 	})
 
 	err := taskStream.Send(task)

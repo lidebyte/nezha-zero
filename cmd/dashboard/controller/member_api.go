@@ -67,14 +67,13 @@ func (ma *memberAPI) serve() {
 	wr.POST("/notification/verify", ma.testNotification)
 	wr.POST("/ddns", ma.addOrEditDDNS)
 	wr.POST("/setting", ma.updateSetting)
+	wr.GET("/totp", ma.totpStatus)
 	wr.POST("/totp", ma.totp)
 	wr.POST("/token", ma.issueNewToken)
 	wr.GET("/token", ma.getToken)
 	wr.GET("/log", ma.listLogs)
 	wr.DELETE("/token/:token", ma.deleteToken)
 	wr.DELETE("/:model/:id", ma.delete)
-	wr.GET("/two-factor-grant", ma.twoFactorGrantStatus)
-	wr.POST("/two-factor-grant", ma.twoFactorGrantVerify)
 
 	// 可直接在服务器上执行代码的操作，启用双重验证后需在二次验证授权有效期内
 	gr := wr.Group("")
@@ -1518,31 +1517,19 @@ func (ma *memberAPI) logout(c *gin.Context) {
 	}
 }
 
-type twoFactorGrantForm struct {
-	TwoFactorCode string
-}
-
-// twoFactorGrantStatus 返回当前会话的敏感操作授权状态，remaining 为剩余秒数。
-func (ma *memberAPI) twoFactorGrantStatus(c *gin.Context) {
+// totpStatus 返回双重验证是否启用及当前会话的敏感操作授权剩余秒数。
+func (ma *memberAPI) totpStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Response{
 		Code: http.StatusOK,
 		Result: gin.H{
-			"required":  mygin.TwoFactorGrantRequired(),
-			"remaining": int(mygin.TwoFactorGrantRemaining(c).Seconds()),
+			"enabled":        mygin.TwoFactorGrantRequired(),
+			"grantRemaining": int(mygin.TwoFactorGrantRemaining(c).Seconds()),
 		},
 	})
 }
 
-// twoFactorGrantVerify 校验动态验证码，为当前会话授予 mygin.TwoFactorGrantTTL 的敏感操作授权。
-func (ma *memberAPI) twoFactorGrantVerify(c *gin.Context) {
-	var sf twoFactorGrantForm
-	if err := c.ShouldBindJSON(&sf); err != nil {
-		c.JSON(http.StatusOK, model.Response{
-			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("请求错误：%s", err),
-		})
-		return
-	}
+// totpGrant 校验动态验证码，为当前会话授予 mygin.TwoFactorGrantTTL 的敏感操作授权。
+func (ma *memberAPI) totpGrant(c *gin.Context, code string) {
 	if !mygin.TwoFactorGrantRequired() {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
 		return
@@ -1561,14 +1548,14 @@ func (ma *memberAPI) twoFactorGrantVerify(c *gin.Context) {
 		})
 		return
 	}
-	if strings.TrimSpace(sf.TwoFactorCode) == "" {
+	if code == "" {
 		c.JSON(http.StatusOK, model.Response{
 			Code:    http.StatusBadRequest,
 			Message: "请输入当前双重验证码",
 		})
 		return
 	}
-	if message := validateSettingChangeTwoFactor(true, singleton.Conf.Site.TwoFactorSecret, sf.TwoFactorCode); message != "" {
+	if message := validateSettingChangeTwoFactor(true, singleton.Conf.Site.TwoFactorSecret, code); message != "" {
 		left := mygin.RecordTwoFactorGrantFailure(c)
 		audit.Record(c, audit.TypeSecurity, "Two-factor grant verification failed", "invalid two-factor code")
 		if left <= 0 {
@@ -1592,8 +1579,8 @@ func (ma *memberAPI) twoFactorGrantVerify(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Response{
 		Code: http.StatusOK,
 		Result: gin.H{
-			"required":  true,
-			"remaining": int(mygin.TwoFactorGrantTTL.Seconds()),
+			"enabled":        true,
+			"grantRemaining": int(mygin.TwoFactorGrantTTL.Seconds()),
 		},
 	})
 }
@@ -2171,6 +2158,9 @@ func (ma *memberAPI) totp(c *gin.Context) {
 			Message: "双重验证已关闭",
 		})
 		audit.Record(c, audit.TypeSecurity, "Two-factor disabled", "TOTP secret removed from site config")
+
+	case "grant":
+		ma.totpGrant(c, req.Code)
 
 	default:
 		c.JSON(http.StatusOK, model.Response{

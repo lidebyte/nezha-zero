@@ -639,11 +639,11 @@ function requireTwoFactorGrant(callback) {
     callback();
     return;
   }
-  $.get("/api/two-factor-grant")
+  $.get("/api/totp")
     .done(function (resp) {
       if (resp.code != 200) {
         alert("操作失败 " + resp.code + "：" + resp.message);
-      } else if (!resp.result || !resp.result.required || resp.result.remaining > 0) {
+      } else if (!resp.result || !resp.result.enabled || resp.result.grantRemaining > 0) {
         callback();
       } else {
         showTwoFactorGrantModal(callback);
@@ -656,10 +656,10 @@ function requireTwoFactorGrant(callback) {
 
 function verifyTwoFactorGrant(code) {
   return $.ajax({
-    url: "/api/two-factor-grant",
+    url: "/api/totp",
     type: "POST",
     contentType: "application/json",
-    data: JSON.stringify({ TwoFactorCode: code }),
+    data: JSON.stringify({ operation: "grant", code: code }),
   });
 }
 

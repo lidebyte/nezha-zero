@@ -680,7 +680,7 @@ function showTwoFactorGrantModal(callback) {
   });
   modal
     .modal({
-      closable: false,
+      closable: true,
       autofocus: false,
       onVisible: function () {
         input.trigger("focus");

@@ -427,6 +427,144 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                     {{end}}
                 </tbody>
         </table>
+<script>
+// 统计概览只依赖表格数据和原生 DOM，紧跟表格执行：页尾外部脚本加载期间浏览器会先绘制已解析内容，
+// 放在页尾脚本里渲染会先露出一块空白（窄屏下还会因即将到期卡片换行导致表格下跳）
+const subscriptionRows = Array.from(document.querySelectorAll('tr.subscription-row'));
+const subscriptionRowOriginalIndexes = new Map(subscriptionRows.map(function (row, index) {
+    return [row, index];
+}));
+
+function subscriptionRemainingSortKey(row) {
+    const enabled = row.dataset.enabled === '1';
+    const lifetime = row.dataset.lifetime === '1';
+    const hasEnd = row.dataset.hasEnd === '1';
+    const remaining = parseInt(row.dataset.remainingDays, 10) || 0;
+    if (!enabled) return [4, 0];
+    if (lifetime) return [3, 0];
+    if (hasEnd && remaining >= 0) return [0, remaining];
+    if (hasEnd && remaining < 0) return [1, 0];
+    return [2, 0];
+}
+
+function addSubscriptionCost(costs, currency, amount) {
+    costs[currency] = (costs[currency] || 0) + amount;
+}
+
+function renderSubscriptionCosts(elementID, costs, format) {
+    const element = document.getElementById(elementID);
+    const currencies = Object.keys(costs).sort();
+    element.dataset.currencyCount = currencies.length > 2 ? 'many' : String(currencies.length);
+    if (currencies.length === 0) {
+        element.textContent = '-';
+        return;
+    }
+    const parts = (format || '__AMOUNT__').split('__AMOUNT__');
+    const nodes = [parts[0]];
+    currencies.forEach(function (currency, index) {
+        if (index > 0) {
+            const separator = document.createElement('span');
+            separator.className = 'subscription-cost-separator';
+            separator.textContent = ' · ';
+            nodes.push(separator);
+        }
+        const item = document.createElement('span');
+        item.className = 'subscription-cost-item';
+        const code = document.createElement('span');
+        code.className = 'subscription-cost-currency';
+        code.textContent = currency;
+        item.append(costs[currency].toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }), code);
+        nodes.push(item);
+    });
+    nodes.push(parts[1] || '');
+    element.textContent = '';
+    element.append(...nodes);
+}
+
+function subscriptionDueLabel(days) {
+    if (days === 0) return '{{tr "SubscriptionDueToday"}}';
+    const label = days === 1
+        ? '{{tr "SubscriptionDueInDays" (toValMap "__DAYS__") 1}}'
+        : '{{tr "SubscriptionDueInDays" (toValMap "__DAYS__") 2}}';
+    return label.replace('__DAYS__', days);
+}
+
+// 与表格"剩余天数"列的着色阈值保持一致
+function subscriptionDueLevel(days) {
+    if (days <= 3) return 'danger';
+    if (days <= 7) return 'warning';
+    return '';
+}
+
+function renderUpcomingSubscriptions() {
+    const upcoming = subscriptionRows.filter(function (row) {
+        return row.style.display !== 'none' && subscriptionRemainingSortKey(row)[0] === 0;
+    }).sort(function (a, b) {
+        const dateOrder = a.cells[4].textContent.trim().localeCompare(b.cells[4].textContent.trim());
+        return dateOrder || subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
+    }).slice(0, 3);
+    const list = document.getElementById('subscriptionUpcomingList');
+    list.textContent = '';
+    upcoming.forEach(function (row) {
+        const days = parseInt(row.dataset.remainingDays, 10) || 0;
+        const level = subscriptionDueLevel(days);
+        const card = document.createElement('article');
+        card.className = 'subscription-tile' + (level ? ' is-' + level : '');
+        const label = document.createElement('div');
+        label.className = 'subscription-tile-label' + (level ? ' subscription-days-' + level : '');
+        label.textContent = subscriptionDueLabel(days);
+        const name = document.createElement('div');
+        name.className = 'subscription-tile-value subscription-tile-name';
+        name.textContent = row.cells[2].textContent.trim();
+        name.title = name.textContent;
+        const meta = document.createElement('div');
+        meta.className = 'subscription-tile-meta';
+        const date = document.createElement('time');
+        date.dateTime = row.cells[4].textContent.trim();
+        date.textContent = date.dateTime;
+        meta.appendChild(date);
+        const amount = (row.dataset.originalPrice || '').match(/[-+]?\d[\d.,]*/);
+        if (amount) {
+            const price = document.createElement('span');
+            price.className = 'subscription-tile-price';
+            price.textContent = amount[0] + (row.dataset.originalCurrency ? ' ' + row.dataset.originalCurrency : '');
+            meta.appendChild(price);
+        }
+        card.append(label, name, meta);
+        list.appendChild(card);
+    });
+    list.hidden = upcoming.length === 0;
+    document.getElementById('subscriptionOverviewGrid').classList.toggle('has-upcoming', upcoming.length > 0);
+}
+
+function filterSubscriptionsByGroup(group) {
+    const monthlyCosts = {};
+    const yearlyCosts = {};
+    subscriptionRows.forEach(function (row) {
+        const visible = !group || row.dataset.subscriptionGroup === group;
+        row.style.display = visible ? '' : 'none';
+        if (!visible) {
+            const checkbox = row.querySelector('input.nezha-subscriptions[type=checkbox]');
+            if (checkbox) checkbox.checked = false;
+            return;
+        }
+        if (row.dataset.enabled === '1' && row.dataset.hasCost === '1') {
+            const currency = row.dataset.costCurrency;
+            addSubscriptionCost(monthlyCosts, currency, parseFloat(row.dataset.monthlyCost) || 0);
+            addSubscriptionCost(yearlyCosts, currency, parseFloat(row.dataset.yearlyCost) || 0);
+        }
+    });
+    renderSubscriptionCosts('subscriptionStatMonthly', monthlyCosts, '{{tr "SubscriptionMonthlyEquivalent" (toValMap "__AMOUNT__")}}');
+    renderSubscriptionCosts('subscriptionStatYearly', yearlyCosts);
+    renderUpcomingSubscriptions();
+}
+
+filterSubscriptionsByGroup('');
+document.getElementById('subscriptionOverviewGrid').style.visibility = '';
+</script>
     </div>
 </div>
 
@@ -596,10 +734,6 @@ function checkAllSubscriptions() {
     visibleCheckboxes.forEach(function (checkbox) { checkbox.checked = shouldCheck; });
 }
 
-const subscriptionRows = Array.from(document.querySelectorAll('tr.subscription-row'));
-const subscriptionRowOriginalIndexes = new Map(subscriptionRows.map(function (row, index) {
-    return [row, index];
-}));
 const subscriptionRemainingSort = document.getElementById('subscriptionRemainingSort');
 let subscriptionRemainingSortActive = false;
 const subscriptionPriceSort = document.getElementById('subscriptionPriceSort');
@@ -623,18 +757,6 @@ function setSubscriptionPriceSortState(state) {
     subscriptionPriceSort.setAttribute('aria-pressed', state !== 0 ? 'true' : 'false');
     const icon = subscriptionPriceSort.querySelector('i');
     if (icon) icon.className = state === 1 ? 'sort amount up icon' : 'sort amount down icon';
-}
-
-function subscriptionRemainingSortKey(row) {
-    const enabled = row.dataset.enabled === '1';
-    const lifetime = row.dataset.lifetime === '1';
-    const hasEnd = row.dataset.hasEnd === '1';
-    const remaining = parseInt(row.dataset.remainingDays, 10) || 0;
-    if (!enabled) return [4, 0];
-    if (lifetime) return [3, 0];
-    if (hasEnd && remaining >= 0) return [0, remaining];
-    if (hasEnd && remaining < 0) return [1, 0];
-    return [2, 0];
 }
 
 // 展示价格已由后端按"月度价格显示"与"货币换算"统一口径计算，
@@ -710,121 +832,6 @@ subscriptionGroups.forEach(function (group) {
     subscriptionGroupMenu.appendChild(item);
 });
 
-function addSubscriptionCost(costs, currency, amount) {
-    costs[currency] = (costs[currency] || 0) + amount;
-}
-
-function renderSubscriptionCosts(elementID, costs, format) {
-    const element = document.getElementById(elementID);
-    const currencies = Object.keys(costs).sort();
-    element.dataset.currencyCount = currencies.length > 2 ? 'many' : String(currencies.length);
-    if (currencies.length === 0) {
-        element.textContent = '-';
-        return;
-    }
-    const parts = (format || '__AMOUNT__').split('__AMOUNT__');
-    const nodes = [parts[0]];
-    currencies.forEach(function (currency, index) {
-        if (index > 0) {
-            const separator = document.createElement('span');
-            separator.className = 'subscription-cost-separator';
-            separator.textContent = ' · ';
-            nodes.push(separator);
-        }
-        const item = document.createElement('span');
-        item.className = 'subscription-cost-item';
-        const code = document.createElement('span');
-        code.className = 'subscription-cost-currency';
-        code.textContent = currency;
-        item.append(costs[currency].toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }), code);
-        nodes.push(item);
-    });
-    nodes.push(parts[1] || '');
-    element.textContent = '';
-    element.append(...nodes);
-}
-
-function subscriptionDueLabel(days) {
-    if (days === 0) return '{{tr "SubscriptionDueToday"}}';
-    const label = days === 1
-        ? '{{tr "SubscriptionDueInDays" (toValMap "__DAYS__") 1}}'
-        : '{{tr "SubscriptionDueInDays" (toValMap "__DAYS__") 2}}';
-    return label.replace('__DAYS__', days);
-}
-
-// 与表格"剩余天数"列的着色阈值保持一致
-function subscriptionDueLevel(days) {
-    if (days <= 3) return 'danger';
-    if (days <= 7) return 'warning';
-    return '';
-}
-
-function renderUpcomingSubscriptions() {
-    const upcoming = subscriptionRows.filter(function (row) {
-        return row.style.display !== 'none' && subscriptionRemainingSortKey(row)[0] === 0;
-    }).sort(function (a, b) {
-        const dateOrder = a.cells[4].textContent.trim().localeCompare(b.cells[4].textContent.trim());
-        return dateOrder || subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
-    }).slice(0, 3);
-    const list = document.getElementById('subscriptionUpcomingList');
-    list.textContent = '';
-    upcoming.forEach(function (row) {
-        const days = parseInt(row.dataset.remainingDays, 10) || 0;
-        const level = subscriptionDueLevel(days);
-        const card = document.createElement('article');
-        card.className = 'subscription-tile' + (level ? ' is-' + level : '');
-        const label = document.createElement('div');
-        label.className = 'subscription-tile-label' + (level ? ' subscription-days-' + level : '');
-        label.textContent = subscriptionDueLabel(days);
-        const name = document.createElement('div');
-        name.className = 'subscription-tile-value subscription-tile-name';
-        name.textContent = row.cells[2].textContent.trim();
-        name.title = name.textContent;
-        const meta = document.createElement('div');
-        meta.className = 'subscription-tile-meta';
-        const date = document.createElement('time');
-        date.dateTime = row.cells[4].textContent.trim();
-        date.textContent = date.dateTime;
-        meta.appendChild(date);
-        const amount = (row.dataset.originalPrice || '').match(/[-+]?\d[\d.,]*/);
-        if (amount) {
-            const price = document.createElement('span');
-            price.className = 'subscription-tile-price';
-            price.textContent = amount[0] + (row.dataset.originalCurrency ? ' ' + row.dataset.originalCurrency : '');
-            meta.appendChild(price);
-        }
-        card.append(label, name, meta);
-        list.appendChild(card);
-    });
-    list.hidden = upcoming.length === 0;
-    document.getElementById('subscriptionOverviewGrid').classList.toggle('has-upcoming', upcoming.length > 0);
-}
-
-function filterSubscriptionsByGroup(group) {
-    const monthlyCosts = {};
-    const yearlyCosts = {};
-    subscriptionRows.forEach(function (row) {
-        const visible = !group || row.dataset.subscriptionGroup === group;
-        row.style.display = visible ? '' : 'none';
-        if (!visible) {
-            const checkbox = row.querySelector('input.nezha-subscriptions[type=checkbox]');
-            if (checkbox) checkbox.checked = false;
-            return;
-        }
-        if (row.dataset.enabled === '1' && row.dataset.hasCost === '1') {
-            const currency = row.dataset.costCurrency;
-            addSubscriptionCost(monthlyCosts, currency, parseFloat(row.dataset.monthlyCost) || 0);
-            addSubscriptionCost(yearlyCosts, currency, parseFloat(row.dataset.yearlyCost) || 0);
-        }
-    });
-    renderSubscriptionCosts('subscriptionStatMonthly', monthlyCosts, '{{tr "SubscriptionMonthlyEquivalent" (toValMap "__AMOUNT__")}}');
-    renderSubscriptionCosts('subscriptionStatYearly', yearlyCosts);
-    renderUpcomingSubscriptions();
-}
-
 $(subscriptionGroupFilter).dropdown({
     onChange: function (value) { filterSubscriptionsByGroup(value); }
 });
@@ -832,8 +839,6 @@ subscriptionGroupFilter.closest('th').addEventListener('click', function (event)
     if (event.target.closest('#subscriptionGroupFilter')) return;
     $(subscriptionGroupFilter).dropdown('show');
 });
-filterSubscriptionsByGroup('');
-document.getElementById('subscriptionOverviewGrid').style.visibility = '';
 
 function batchEditSubscriptionGroup() {
     const group = prompt('{{tr "InputSubscriptionGroupName"}}');

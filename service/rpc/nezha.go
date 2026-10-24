@@ -365,6 +365,9 @@ func (s *NezhaHandler) RequestTask(h *pb.Host, stream pb.NezhaService_RequestTas
 	server.TaskCloseLock.Unlock()
 	select {
 	case err := <-closeCh:
+		// 被新连接替换、超时驱逐或服务器删除：复用模式下此前交接的写可能仍卡在对端流控上，
+		// 之后不会再有 Send 触发超时中断，返回前主动中断，避免处理协程与 h2 流永久悬挂
+		model.AbortTaskStream(stream)
 		return err
 	case <-stream.Context().Done():
 		server.TaskCloseLock.Lock()

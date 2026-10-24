@@ -29,6 +29,18 @@ func WithTaskStreamAbort(ctx context.Context, abort func()) context.Context {
 	return context.WithValue(ctx, taskStreamAbortKey{}, abort)
 }
 
+// AbortTaskStream 中断端口复用模式下的任务流，非复用模式下为空操作。
+// 复用模式的 Send 把写交接给 HTTP 处理协程即返回，写入可能仍卡在对端流控上，
+// 流被替换或驱逐后不会再有 Send 触发超时，必须由丢弃该流的一方显式中断。
+func AbortTaskStream(stream pb.NezhaService_RequestTaskServer) {
+	if stream == nil {
+		return
+	}
+	if abort, ok := stream.Context().Value(taskStreamAbortKey{}).(func()); ok {
+		abort()
+	}
+}
+
 // CloseTaskChan 幂等关闭任务流关闭通道。
 // 调用方必须持有对应的 TaskCloseLock；该通道只用于关闭通知，不传输数据。
 func CloseTaskChan(ch chan error) {
@@ -180,9 +192,7 @@ func (s *Server) sendTaskWithTimeout(task *pb.Task, timeout time.Duration) error
 		s.TaskCloseLock.Unlock()
 
 		// 捕获的旧流无论是否已被替换都要中断：复用模式下旧流的阻塞写不会随 RequestTask 返回而解除。
-		if abort, ok := taskStream.Context().Value(taskStreamAbortKey{}).(func()); ok {
-			abort()
-		}
+		AbortTaskStream(taskStream)
 	})
 
 	err := taskStream.Send(task)

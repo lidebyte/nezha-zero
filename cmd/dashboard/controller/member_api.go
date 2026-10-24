@@ -786,6 +786,10 @@ func (ma *memberAPI) addOrEditMonitor(c *gin.Context) {
 	var mf monitorForm
 	var m model.Monitor
 	err := c.ShouldBindJSON(&mf)
+	// 监控任务会按原类型下发给 Agent，只允许监控类型，防止借此下发命令等任务绕过敏感操作授权
+	if err == nil && mf.Type != model.TaskTypeHTTPGet && mf.Type != model.TaskTypeICMPPing && mf.Type != model.TaskTypeTCPPing {
+		err = errors.New("不支持的监控类型")
+	}
 	if err == nil {
 		m.Name = mf.Name
 		m.Target = strings.TrimSpace(mf.Target)

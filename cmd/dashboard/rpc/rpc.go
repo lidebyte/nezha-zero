@@ -181,6 +181,9 @@ func serveGRPCWithAbort(grpcServer *grpc.Server, w http.ResponseWriter, r *http.
 func rejectH2CUpgradeWithBody(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.ContentLength != 0 && httpguts.HeaderValuesContainsToken(r.Header["Upgrade"], "h2c") {
+			// 未读的请求体会在写响应和收尾时被同步排空，此时连接没有读期限，慢速客户端可借此长期占住连接；
+			// 立即到期让排空直接失败，回复后关闭连接
+			_ = http.NewResponseController(w).SetReadDeadline(time.Now())
 			http.Error(w, "h2c upgrade with request body is not supported", http.StatusBadRequest)
 			return
 		}

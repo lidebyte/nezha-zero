@@ -632,6 +632,21 @@ function showNATModal(nat) {
   );
 }
 
+// 最近一次得知的授权到期时间（毫秒），未启用双重验证时为 Infinity，未知时为 null。
+// 供必须在用户手势内同步决策的场景（打开终端新窗口）使用，以服务端校验为准
+let twoFactorGrantExpiresAt = null;
+
+function updateTwoFactorGrantState(result) {
+  if (!result) return;
+  twoFactorGrantExpiresAt = result.enabled ? Date.now() + (result.grantRemaining || 0) * 1000 : Infinity;
+}
+
+function refreshTwoFactorGrantState() {
+  return $.get("/api/totp").done(function (resp) {
+    if (resp.code == 200) updateTwoFactorGrantState(resp.result);
+  });
+}
+
 // 敏感操作二次验证授权：启用双重验证后，终端、文件管理、计划任务、NAT
 // 需在验证通过后的 30 分钟内操作；已授权或无需授权时直接执行 callback。
 function requireTwoFactorGrant(callback) {
@@ -639,7 +654,7 @@ function requireTwoFactorGrant(callback) {
     callback();
     return;
   }
-  $.get("/api/totp")
+  refreshTwoFactorGrantState()
     .done(function (resp) {
       if (resp.code != 200) {
         alert("操作失败 " + resp.code + "：" + resp.message);
@@ -660,15 +675,19 @@ function verifyTwoFactorGrant(code) {
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({ operation: "grant", code: code }),
+  }).done(function (resp) {
+    if (resp.code == 200) updateTwoFactorGrantState(resp.result);
   });
 }
 
-function showTwoFactorGrantModal(callback) {
+// openWindow 为 true 时，callback 以窗口名为参数，向该窗口提交以打开新页面
+function showTwoFactorGrantModal(callback, openWindow) {
   const modal = $(".two-factor-grant.modal");
   const form = modal.find("form");
   const btn = modal.find(".nezha-primary-btn.button");
   const input = form.find("input[name=TwoFactorCode]");
   let verified = false;
+  let pendingOpen = false;
   form.children(".message").remove();
   input.val("");
   btn.removeClass("loading");
@@ -689,21 +708,50 @@ function showTwoFactorGrantModal(callback) {
         if (btn.hasClass("loading")) {
           return false;
         }
+        // 已验证但新窗口被拦截：本次点击是新的用户手势，直接打开
+        if (pendingOpen) {
+          callback("_blank");
+          modal.modal("hide");
+          return false;
+        }
         form.children(".message").remove();
         btn.addClass("loading");
+        const targetName = "nezha-grant-" + Date.now();
+        // 触屏浏览器在异步回调里打开新窗口会被拦截，点击确认时先同步打开空白窗口；
+        // 桌面浏览器点击后数秒内仍允许打开，验证通过后再开，避免先跳到空白页
+        let target = openWindow && window.matchMedia("(pointer: coarse)").matches ? window.open("", targetName) : null;
         verifyTwoFactorGrant(input.val())
           .done(function (resp) {
-            if (resp.code == 200) {
+            if (resp.code != 200) {
+              form.append($('<div class="ui negative message"></div>').text(resp.message));
+              return;
+            }
+            if (!openWindow) {
               verified = true;
               modal.modal("hide");
-            } else {
-              form.append($('<div class="ui negative message"></div>').text(resp.message));
+              return;
             }
+            if (target) {
+              callback(targetName);
+              target = null;
+              modal.modal("hide");
+              return;
+            }
+            // 桌面端直接以 _blank 提交，不经 window.open 预开 about:blank，避免先出现空白标签页；
+            // 点击确认的瞬时激活已失效时提交会被静默拦截，改为提示再点一次
+            if (!navigator.userActivation || navigator.userActivation.isActive) {
+              callback("_blank");
+              modal.modal("hide");
+              return;
+            }
+            pendingOpen = true;
+            form.append($('<div class="ui positive message"></div>').text("验证已通过，请再次点击确认打开"));
           })
           .fail(function (err) {
             form.append($('<div class="ui negative message"></div>').text("网络错误：" + err.responseText));
           })
           .always(function () {
+            if (target) target.close();
             btn.removeClass("loading");
           });
         return false;
@@ -718,17 +766,30 @@ function showTwoFactorGrantModal(callback) {
     .modal("show");
 }
 
+// 终端在新窗口打开，必须在点击事件内同步决策：经 requireTwoFactorGrant 异步回调后再打开会失去用户手势，
+// 移动端浏览器会按弹窗拦截。授权状态未知或缓存与服务端不一致时，由 /terminal 在新标签页内显示验证页兜底
 function connectToServer(id) {
-  requireTwoFactorGrant(function () {
-    post('/terminal', { Host: window.location.host, Protocol: window.location.protocol, ID: id })
-  });
+  const params = { Host: window.location.host, Protocol: window.location.protocol, ID: id };
+  if ($(".two-factor-grant.modal").length === 0 || twoFactorGrantExpiresAt === null || twoFactorGrantExpiresAt > Date.now()) {
+    post('/terminal', params);
+    return;
+  }
+  showTwoFactorGrantModal(function (target) {
+    post('/terminal', params, 'post', target);
+  }, true);
 }
 
-function post(path, params, method = 'post') {
+$(function () {
+  if ($(".two-factor-grant.modal").length > 0 && $("[onclick^='connectToServer']").length > 0) {
+    refreshTwoFactorGrantState();
+  }
+});
+
+function post(path, params, method = 'post', target = '_blank') {
   const form = document.createElement('form');
   form.method = method;
   form.action = path;
-  form.target = "_blank";
+  form.target = target;
 
   for (const key in params) {
     if (params.hasOwnProperty(key)) {

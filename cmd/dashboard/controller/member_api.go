@@ -790,6 +790,9 @@ func (ma *memberAPI) addOrEditMonitor(c *gin.Context) {
 	if err == nil && mf.Type != model.TaskTypeHTTPGet && mf.Type != model.TaskTypeICMPPing && mf.Type != model.TaskTypeTCPPing {
 		err = errors.New("不支持的监控类型")
 	}
+	if err == nil && mf.Cover > model.MonitorCoverIgnoreAll {
+		err = errors.New("不支持的监控覆盖范围")
+	}
 	if err == nil {
 		m.Name = mf.Name
 		m.Target = strings.TrimSpace(mf.Target)

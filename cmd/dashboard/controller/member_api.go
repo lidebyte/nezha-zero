@@ -143,7 +143,7 @@ func (ma *memberAPI) issueNewToken(c *gin.Context) {
 			})
 			return
 		}
-		if message := validateSettingChangeTwoFactor(true, singleton.Conf.Site.TwoFactorSecret, tf.TwoFactorCode); message != "" {
+		if message := verifySessionTwoFactor(c, tf.TwoFactorCode); message != "" {
 			audit.Record(c, audit.TypeSecurity, "API token issue failed", "invalid two-factor code")
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,
@@ -1638,6 +1638,19 @@ func validateSettingChangeTwoFactor(required bool, secret, code string) string {
 	return ""
 }
 
+// verifySessionTwoFactor 校验当前会话提交的动态验证码，与敏感操作授权共用每会话试错计数，
+// 防止被盗会话绕开授权页的次数限制、借其他需要验证码的接口持续猜码。通过时返回空字符串。
+func verifySessionTwoFactor(c *gin.Context, code string) string {
+	if mygin.TwoFactorGrantLocked(c) {
+		return "验证码错误次数过多，请重新登录后再试"
+	}
+	message := validateSettingChangeTwoFactor(true, singleton.Conf.Site.TwoFactorSecret, code)
+	if message != "" && strings.TrimSpace(code) != "" && mygin.RecordTwoFactorGrantFailure(c) <= 0 {
+		return "验证码错误次数过多，请重新登录后再试"
+	}
+	return message
+}
+
 func (ma *memberAPI) updateSetting(c *gin.Context) {
 	var sf settingForm
 	if err := c.ShouldBind(&sf); err != nil {
@@ -1733,7 +1746,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 			})
 			return
 		}
-		if message := validateSettingChangeTwoFactor(passwordChanged || sensitiveSettingChanged, singleton.Conf.Site.TwoFactorSecret, sf.TwoFactorCode); message != "" {
+		if message := verifySessionTwoFactor(c, sf.TwoFactorCode); message != "" {
 			auditReason := "Admin password change failed"
 			if !passwordChanged {
 				auditReason = "Admin security setting change failed"
@@ -2134,11 +2147,11 @@ func (ma *memberAPI) totp(c *gin.Context) {
 			})
 			return
 		}
-		if !totp.Validate(singleton.Conf.Site.TwoFactorSecret, req.Code, 1) {
+		if message := verifySessionTwoFactor(c, req.Code); message != "" {
 			audit.Record(c, audit.TypeSecurity, "Two-factor disable failed", "invalid two-factor code on unbind")
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,
-				Message: "双重验证码错误，请重试",
+				Message: message,
 			})
 			return
 		}

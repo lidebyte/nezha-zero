@@ -64,9 +64,11 @@ func (pty *Pty) Setsize(cols, rows uint32) error {
 
 func (pty *Pty) killChildProcess(c *exec.Cmd) error {
 	pgid, err := syscall.Getpgid(c.Process.Pid)
-	if err != nil {
+	// 出错时 pgid 为 -1，Kill(-pgid) 会变成 kill(1)；部分系统对已退出未回收的 shell 会返回 ESRCH
+	if err != nil || pgid <= 1 {
 		// Fall-back on error. Kill the main process only.
 		c.Process.Kill()
+		return c.Wait()
 	}
 	// Kill the whole process group.
 	syscall.Kill(-pgid, syscall.SIGKILL) // SIGKILL 直接杀掉 SIGTERM 发送信号，等待进程自己退出

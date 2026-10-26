@@ -255,17 +255,15 @@ function showFormModal(modelSelector, formID, URL, getData, onSuccess, onVisible
               }
             } else {
               form.append(
-                `<div class="ui negative message"><div class="header">操作失败</div><p>` +
-                resp.message +
-                `</p></div>`
+                $('<div class="ui negative message"><div class="header">操作失败</div></div>')
+                  .append($("<p>").text(resp.message))
               );
             }
           })
           .fail(function (err) {
             form.append(
-              `<div class="ui negative message"><div class="header">网络错误</div><p>` +
-              err.responseText +
-              `</p></div>`
+              $('<div class="ui negative message"><div class="header">网络错误</div></div>')
+                .append($("<p>").text(err.responseText))
             );
           })
           .always(function () {

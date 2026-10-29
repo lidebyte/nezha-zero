@@ -228,10 +228,9 @@ func (cv *compatV1) listConfig(c *gin.Context) {
 
 	conf := model.V1SettingResponse[model.V1Config]{
 		Config: model.V1Config{
-			SiteName:            singleton.Conf.Site.Brand,
-			Language:            strings.Replace(singleton.Conf.Language, "_", "-", -1),
-			CustomCode:          singleton.Conf.Site.CustomCode,
-			CustomCodeDashboard: singleton.Conf.Site.CustomCodeDashboard,
+			SiteName:   singleton.Conf.Site.Brand,
+			Language:   strings.Replace(singleton.Conf.Language, "_", "-", -1),
+			CustomCode: singleton.Conf.Site.CustomCode,
 		},
 		Version: func() string {
 			if authorized {

@@ -153,10 +153,9 @@ type V1ServiceInfos struct {
 }
 
 type V1Config struct {
-	SiteName            string `mapstructure:"site_name" json:"site_name"`
-	Language            string `mapstructure:"language" json:"language"`
-	CustomCode          string `mapstructure:"custom_code" json:"custom_code,omitempty"`
-	CustomCodeDashboard string `mapstructure:"custom_code_dashboard" json:"custom_code_dashboard,omitempty"`
+	SiteName   string `mapstructure:"site_name" json:"site_name"`
+	Language   string `mapstructure:"language" json:"language"`
+	CustomCode string `mapstructure:"custom_code" json:"custom_code,omitempty"`
 }
 
 type V1SettingResponse[T any] struct {
